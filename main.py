@@ -1,5 +1,22 @@
 # Commandant - A Discord bot to manage goal tracking and performance
 # Author: Aryan Cyrus
+#========================= Bogus flask server to keep render happy =========================
+from flask import Flask
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Bot is running!"
+
+def run_flask():
+    app.run(host='0.0.0.0', port=10000)
+
+# In your Client's on_ready method, add:
+async def on_ready(self):
+    print(f'logged on as {self.user}!')
+    Thread(target=run_flask).start()
 
 #========================= Imports and Setup =========================
 import discord
