@@ -31,6 +31,8 @@ class Client(discord.Client):
     async def on_message(self, message):
         if message.author == self.user:
             return
+        
+        #---- initialising vars ----
         content = message.content.lower()
         today = str(date.today())
         user_id = str(message.author.name)
@@ -50,7 +52,6 @@ class Client(discord.Client):
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
             performances = performance_all(7)
-            # Sort by completion count descending
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
             msg_lines = [f"{user}: {count}/7 complete" for user, count in sorted_perf]
             await message.channel.send("📊 Weekly performance:\n" + "\n".join(msg_lines))
@@ -74,7 +75,7 @@ class Client(discord.Client):
             ]
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
-            
+
 #========================= Weekly preformance update ==========================
 @tasks.loop(minutes=1)
 async def weekly_report():
@@ -90,6 +91,27 @@ async def weekly_report():
             report = "\n".join(msg_lines)
             await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
+#========================= Daily Init ==========================
+@tasks.loop(hours=24)
+async def daily_init():
+    today = str(date.today())
+    for user_key in goal_status.keys():
+        if today not in goal_status[user_key]:
+            goal_status[user_key][today] = ""
+    save_data()
+
+async def on_ready(self):
+    print(f'Logged on as {self.user}!')
+    daily_init.start()
+
+@tasks.loop(hours=24)
+async def daily_finalize():
+    yesterday = str(date.today())
+    for user_key, records in goal_status.items():
+        if yesterday in records and records[yesterday] == "":
+            records[yesterday] = "incomplete"
+    save_data()
+    
 #========================= X-Day Performance Calculation ==========================
 def performance_all(n: int = 7):
     results = {}
