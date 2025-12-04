@@ -6,7 +6,7 @@ import discord
 from discord.ext import tasks
 import os
 from dotenv import load_dotenv
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import json
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -27,6 +27,12 @@ def save_data():
 class Client(discord.Client):
     async def on_ready(self):
         print(f'logged on as {self.user}!')
+        if not daily_init.is_running():
+            daily_init.start()
+        if not daily_finalize.is_running():
+            daily_finalize.start()
+        if not weekly_report.is_running():
+            weekly_report.start()
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -39,16 +45,16 @@ class Client(discord.Client):
         
         #---- Goal Completion ----
         if "goals complete" in content or "goals completed" in content:
-            goal_status.setdefault(user_id,{})[today] = "complete"
-            save_data()
-            await message.channel.send(f"Marked goals as complete for {message.author.name} on {today}.")
-        
+            target_date = update_latest_status(user_id, "complete")
+            await message.channel.send(
+                f"Marked goals as complete for {message.author.name} on {target_date}."
+            )
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
-            goal_status.setdefault(user_id,{})[today] = "incomplete"
-            save_data()
-            await message.channel.send(f"Marked goals as incomplete for {message.author.name} on {today}.")    
-            
+            target_date = update_latest_status(user_id, "incomplete")
+            await message.channel.send(
+                f"Marked goals as incomplete for {message.author.name} on {target_date}."
+            )
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
             performances = performance_all(7)
@@ -76,12 +82,37 @@ class Client(discord.Client):
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
 
+#========================= Update Latest pending status ==========================
+def update_latest_status(user_id: str, status: str):
+    # Ensure user exists
+    goal_status.setdefault(user_id, {})
+
+    # Sort dates ascending (oldest → newest)
+    sorted_dates = sorted(goal_status[user_id].keys())
+
+    # Find the most recent blank entry
+    target_date = None
+    for d in reversed(sorted_dates):  # check newest first
+        if goal_status[user_id][d] == "":
+            target_date = d
+            break
+
+    # If no blank entry, default to today
+    if target_date is None:
+        target_date = str(date.today())
+        if target_date not in goal_status[user_id]:
+            goal_status[user_id][target_date] = ""
+
+    # Update the chosen date
+    goal_status[user_id][target_date] = status
+    save_data()
+    return target_date
 #========================= Weekly preformance update ==========================
 @tasks.loop(minutes=1)
 async def weekly_report():
     now = datetime.now()
     if now.weekday() == 0 and now.hour == 7 and now.minute == 0:
-        channel = discord.utils.get(client.get_all_channels(), name="general")  # change to your channel name
+        channel = discord.utils.get(client.get_all_channels(), name="general")  
         if channel:
             performances = all_time_performance()
             msg_lines = [
@@ -103,15 +134,17 @@ async def daily_init():
 async def on_ready(self):
     print(f'Logged on as {self.user}!')
     daily_init.start()
+    daily_finalize.start()
+    weekly_report.start()
 
 @tasks.loop(hours=24)
 async def daily_finalize():
-    yesterday = str(date.today())
+    yesterday = str(date.today() - timedelta(days=1))
     for user_key, records in goal_status.items():
         if yesterday in records and records[yesterday] == "":
             records[yesterday] = "incomplete"
     save_data()
-    
+
 #========================= X-Day Performance Calculation ==========================
 def performance_all(n: int = 7):
     results = {}
