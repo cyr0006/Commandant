@@ -30,7 +30,7 @@ class Client(discord.Client):
             return
         content = message.content.lower()
         today = str(date.today())
-        user_id = str(message.author.id)
+        user_id = str(message.author.name)
 
         if "goals complete" in content or "goals completed" in content:
             goal_status.setdefault(user_id,{})[today] = "complete"
@@ -42,13 +42,24 @@ class Client(discord.Client):
             save_data()
             await message.channel.send(f"Marked goals as incomplete for {message.author.name} on {today}.")    
             
-        elif content.startswith("!status"):
-            # Example command to check a user's record
-            user_data = goal_status.get(user_id, {})
-            streak = sum(1 for s in user_data.values() if s == "complete")
-            await message.channel.send(f"{message.author.display_name}, you have {streak} completions logged.")
+        elif content.startswith("!streak"):
+            performances = last_7_performance_all()
+            msg_lines = [f"{user}: {count}/7 complete" for user, count in performances.items()]
+            report = "\n".join(msg_lines)
+            await message.channel.send(f"📊 Last 7‑day performance:\n{report}")
 
+def last_7_performance_all():
+    results = {}
 
+    for user_key, records in goal_status.items():
+        sorted_dates = sorted(records.keys(), reverse=True)
+
+        last_7 = sorted_dates[:7]
+        complete_count = sum(1 for d in last_7 if records[d] == "complete")
+
+        results[user_key] = complete_count
+
+    return results
 
 
 
