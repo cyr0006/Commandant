@@ -28,10 +28,13 @@ class Client(discord.Client):
     async def on_ready(self):
         print(f'logged on as {self.user}!')
         if not daily_init.is_running():
+            #insert a goals entry for today for all users
             daily_init.start()
         if not daily_finalize.is_running():
+            #scrutinise goals entry for today for all users
             daily_finalize.start()
         if not weekly_report.is_running():
+            #send weekly report every monday at 7am
             weekly_report.start()
 
     async def on_message(self, message):
@@ -44,12 +47,14 @@ class Client(discord.Client):
         user_id = str(message.author.name)
         
         #---- Goal Completion ----
+        #Goals complete updates latest pending entry to complete
         if "goals complete" in content or "goals completed" in content:
             target_date = update_latest_status(user_id, "complete")
             await message.channel.send(
                 f"Marked goals as complete for {message.author.name} on {target_date}."
             )
         #---- Goal failure ----
+        #Goals incomplete updates latest pending entry to incomplete
         elif "goals incomplete" in content or "goals failed" in content:
             target_date = update_latest_status(user_id, "incomplete")
             await message.channel.send(
@@ -61,6 +66,7 @@ class Client(discord.Client):
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
             msg_lines = [f"{user}: {count}/7 complete" for user, count in sorted_perf]
             await message.channel.send("📊 Weekly performance:\n" + "\n".join(msg_lines))
+
         #---- Monthly Leaderboard ----
         elif content.startswith("!monthly"):
             performances = performance_all(30)
@@ -84,26 +90,21 @@ class Client(discord.Client):
 
 #========================= Update Latest pending status ==========================
 def update_latest_status(user_id: str, status: str):
-    # Ensure user exists
     goal_status.setdefault(user_id, {})
 
-    # Sort dates ascending (oldest → newest)
     sorted_dates = sorted(goal_status[user_id].keys())
 
-    # Find the most recent blank entry
     target_date = None
     for d in reversed(sorted_dates):  # check newest first
         if goal_status[user_id][d] == "":
             target_date = d
             break
 
-    # If no blank entry, default to today
     if target_date is None:
         target_date = str(date.today())
         if target_date not in goal_status[user_id]:
             goal_status[user_id][target_date] = ""
 
-    # Update the chosen date
     goal_status[user_id][target_date] = status
     save_data()
     return target_date
