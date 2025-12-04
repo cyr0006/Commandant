@@ -1,17 +1,5 @@
 # Commandant - A Discord bot to manage goal tracking and performance
 # Author: Aryan Cyrus
-#========================= Bogus flask server to keep render happy =========================
-from flask import Flask
-from threading import Thread
-
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run_flask():
-    app.run(host='0.0.0.0', port=10000)
 
 #========================= Imports and Setup =========================
 import discord
@@ -20,34 +8,119 @@ import os
 from dotenv import load_dotenv
 from datetime import date, datetime, timedelta
 import json
+import requests
+import base64
+from flask import Flask
+from threading import Thread
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-DATA_FILE = "get_status.json"
+
+# GitHub Configuration
+GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
+GITHUB_REPO = os.getenv('GITHUB_REPO')
+GITHUB_FILE_PATH = os.getenv('GITHUB_FILE_PATH', 'get_status.json')
+
+#========================= GitHub Storage Functions =========================
+def load_from_github():
+    """Load JSON data from GitHub"""
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            content = response.json()
+            decoded_content = base64.b64decode(content['content']).decode('utf-8')
+            return json.loads(decoded_content), content['sha']
+        elif response.status_code == 404:
+            # File doesn't exist yet, create it
+            print("File not found on GitHub, creating new one...")
+            save_to_github({})
+            return {}, None
+        else:
+            print(f"Error loading from GitHub: {response.status_code}")
+            return {}, None
+    except Exception as e:
+        print(f"Exception loading from GitHub: {e}")
+        return {}, None
+
+def save_to_github(data, sha=None):
+    """Save JSON data to GitHub"""
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    # Convert data to JSON string and encode to base64
+    json_content = json.dumps(data, indent=2)
+    encoded_content = base64.b64encode(json_content.encode('utf-8')).decode('utf-8')
+    
+    payload = {
+        "message": f"Update goals data - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        "content": encoded_content,
+    }
+    
+    # If we have a SHA (file exists), include it for update
+    if sha:
+        payload["sha"] = sha
+    
+    try:
+        response = requests.put(url, headers=headers, json=payload)
+        if response.status_code in [200, 201]:
+            print("Successfully saved to GitHub")
+            return True
+        else:
+            print(f"Error saving to GitHub: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"Exception saving to GitHub: {e}")
+        return False
 
 #========================= Data Loading ==========================
-if os.path.exists(DATA_FILE):
-    with open(DATA_FILE, "r") as f:
-        goal_status = json.load(f)
-else:
-    goal_status = {}
+goal_status, current_sha = load_from_github()
 
 def save_data():
-    with open(DATA_FILE, "w") as f:
-        json.dump(goal_status, f, indent=2)
+    """Save data to GitHub instead of local file"""
+    global current_sha
+    success = save_to_github(goal_status, current_sha)
+    if success:
+        # Reload to get new SHA
+        _, current_sha = load_from_github()
+
+#========================= Flask Health Check =========================
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Commandant Bot is running!", 200
+
+@app.route('/health')
+def health():
+    return {"status": "healthy", "bot": "online"}, 200
+
+def run_flask():
+    port = int(os.getenv('PORT', 10000))
+    app.run(host='0.0.0.0', port=port)
 
 #========================= Discord Client =========================
 class Client(discord.Client):
     async def on_ready(self):
-        Thread(target=run_flask).start()  # Start Flask in background
         print(f'logged on as {self.user}!')
+        
+        # Start Flask health check server
+        Thread(target=run_flask, daemon=True).start()
+        
         if not daily_init.is_running():
-            #insert a goals entry for today for all users
             daily_init.start()
         if not daily_finalize.is_running():
-            #scrutinise goals entry for today for all users
             daily_finalize.start()
         if not weekly_report.is_running():
-            #send weekly report every monday at 7am
             weekly_report.start()
 
     async def on_message(self, message):
@@ -60,14 +133,12 @@ class Client(discord.Client):
         user_id = str(message.author.name)
         
         #---- Goal Completion ----
-        #Goals complete updates latest pending entry to complete
         if "goals complete" in content or "goals completed" in content:
             target_date = update_latest_status(user_id, "complete")
             await message.channel.send(
                 f"Marked goals as complete for {message.author.name} on {target_date}."
             )
         #---- Goal failure ----
-        #Goals incomplete updates latest pending entry to incomplete
         elif "goals incomplete" in content or "goals failed" in content:
             target_date = update_latest_status(user_id, "incomplete")
             await message.channel.send(
@@ -108,7 +179,7 @@ def update_latest_status(user_id: str, status: str):
     sorted_dates = sorted(goal_status[user_id].keys())
 
     target_date = None
-    for d in reversed(sorted_dates):  # check newest first
+    for d in reversed(sorted_dates):
         if goal_status[user_id][d] == "":
             target_date = d
             break
@@ -121,6 +192,7 @@ def update_latest_status(user_id: str, status: str):
     goal_status[user_id][target_date] = status
     save_data()
     return target_date
+
 #========================= Weekly preformance update ==========================
 @tasks.loop(minutes=1)
 async def weekly_report():
@@ -156,31 +228,21 @@ async def daily_finalize():
 #========================= X-Day Performance Calculation ==========================
 def performance_all(n: int = 7):
     results = {}
-
     for user_key, records in goal_status.items():
-
         sorted_dates = sorted(records.keys(), reverse=True)
-
         last_n = sorted_dates[:n]
-
         complete_count = sum(1 for d in last_n if records[d] == "complete")
-
         results[user_key] = complete_count
-
     return results
 
 #========================= All-Time Performance Calculation ==========================
 def all_time_performance():
     results = {}
-
     for user_key, records in goal_status.items():
         total_entries = len(records)
         complete_count = sum(1 for status in records.values() if status == "complete")
-
         results[user_key] = (complete_count, total_entries)
-
     return results
-
 
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
