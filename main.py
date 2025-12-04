@@ -13,11 +13,6 @@ def home():
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
 
-# In your Client's on_ready method, add:
-async def on_ready(self):
-    print(f'logged on as {self.user}!')
-    Thread(target=run_flask).start()
-
 #========================= Imports and Setup =========================
 import discord
 from discord.ext import tasks
@@ -43,6 +38,7 @@ def save_data():
 #========================= Discord Client =========================
 class Client(discord.Client):
     async def on_ready(self):
+        Thread(target=run_flask).start()  # Start Flask in background
         print(f'logged on as {self.user}!')
         if not daily_init.is_running():
             #insert a goals entry for today for all users
