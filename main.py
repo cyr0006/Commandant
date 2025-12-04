@@ -132,12 +132,6 @@ async def daily_init():
             goal_status[user_key][today] = ""
     save_data()
 
-async def on_ready(self):
-    print(f'Logged on as {self.user}!')
-    daily_init.start()
-    daily_finalize.start()
-    weekly_report.start()
-
 @tasks.loop(hours=24)
 async def daily_finalize():
     yesterday = str(date.today() - timedelta(days=1))
