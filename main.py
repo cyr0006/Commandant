@@ -323,7 +323,7 @@ class Client(discord.Client):
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
-            msg_lines = [f"{user}: {count}/30 complete" for user, count in sorted_perf]
+            msg_lines = [f"{user}: {count}/30 complete ({(count/30*100):.1f}%) { "🔥" if count >= 6 else ("⚠️" if count < 5 else "✅")}" for user, count in sorted_perf]
             await message.channel.send("📊 Monthly performance:\n" + "\n".join(msg_lines))
             
         #---- All-Time Leaderboard ----
@@ -337,8 +337,10 @@ class Client(discord.Client):
                 key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
                 reverse=True
             )
+
+
             msg_lines = [
-                f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%)"
+                f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%) { "🔥" if (complete/total*100) >= 85 else ("⚠️" if (complete/total*100) < 50 else "✅")}"
                 for user, (complete, total) in sorted_perf
             ]
             report = "\n".join(msg_lines)
@@ -350,7 +352,8 @@ class Client(discord.Client):
             await message.channel.send("✅ Checked and ran any pending scheduled tasks!")
 
 #========================= Update Latest pending status ==========================
-def update_latest_status(user_id: str, status: str):
+def update_latest_status(user_id: str, status: str) -> str:
+    """Update the latest pending status for a user"""
     goal_status.setdefault(user_id, {})
 
     sorted_dates = sorted(goal_status[user_id].keys())
@@ -371,7 +374,7 @@ def update_latest_status(user_id: str, status: str):
     return target_date
 
 #========================= X-Day Performance Calculation ==========================
-def performance_all(n: int = 7):
+def performance_all(n: int = 7) -> dict:
     results = {}
     for user_key, records in goal_status.items():
         sorted_dates = sorted(records.keys(), reverse=True)
@@ -381,7 +384,10 @@ def performance_all(n: int = 7):
     return results
 
 #========================= All-Time Performance Calculation ==========================
-def all_time_performance():
+def all_time_performance() -> dict:
+    """
+    Lists all time preformance for all users
+    """
     results = {}
     for user_key, records in goal_status.items():
         total_entries = len(records)
