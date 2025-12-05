@@ -191,8 +191,10 @@ async def process_message_content(message):
     if "goals complete" in content or "goals completed" in content:
         target_date = update_latest_status(user_id, "complete")
         print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
+        message.add_reaction("✅")
     elif "goals incomplete" in content or "goals failed" in content:
         target_date = update_latest_status(user_id, "incomplete")
+        message.add_reaction("❌")
         print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
 
 async def check_and_run_scheduled_tasks(channel):
