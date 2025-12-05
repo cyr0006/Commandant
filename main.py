@@ -188,7 +188,7 @@ async def process_missed_messages(channel):
         print("No previous timestamp found, skipping catch-up")
     
     # Update last processed time to now
-    set_last_processed_time(datetime.utcnow().isoformat())
+    set_last_processed_time(datetime.now(MELBOURNE_TZ).isoformat())
     await check_and_run_scheduled_tasks(channel)
 
 
@@ -304,7 +304,7 @@ class Client(discord.Client):
             return
         
         # Update last processed time whenever we receive a message
-        set_last_processed_time(datetime.utcnow().isoformat())
+        set_last_processed_time(datetime.now(MELBOURNE_TZ).isoformat())
         
         #---- initialising vars ----
         content = message.content.lower()
@@ -380,7 +380,7 @@ def update_latest_status(user_id: str, status: str) -> str:
             break
 
     if target_date is None:
-        target_date = str(date.today())
+        target_date = str(get_melbourne_date())
         if target_date not in goal_status[user_id]:
             goal_status[user_id][target_date] = ""
 
