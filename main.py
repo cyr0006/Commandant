@@ -12,9 +12,13 @@ import requests
 import base64
 from flask import Flask
 from threading import Thread
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+MELBOURNE_TZ = ZoneInfo('Australia/Melbourne')
+
 
 # GitHub Configuration
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
@@ -157,6 +161,9 @@ def run_flask():
     app.run(host='0.0.0.0', port=port)
 
 #========================= Catch-up Logic =========================
+def get_melbourne_date():
+    """Get current date in Melbourne timezone"""
+    return datetime.now(MELBOURNE_TZ).date()
 async def process_missed_messages(channel):
     """Process messages that were sent while bot was offline"""
     last_time = get_last_processed_time()
@@ -193,16 +200,17 @@ async def process_message_content(message):
     if "goals complete" in content or "goals completed" in content:
         target_date = update_latest_status(user_id, "complete")
         print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
-        message.add_reaction("✅")
+        await message.add_reaction("✅")
     elif "goals incomplete" in content or "goals failed" in content:
         target_date = update_latest_status(user_id, "incomplete")
-        message.add_reaction("❌")
+        await message.add_reaction("❌")
         print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
 
 async def check_and_run_scheduled_tasks(channel):
     """Check if any scheduled tasks need to run"""
-    today_str = str(date.today())
-    yesterday_str = str(date.today() - timedelta(days=1))
+    today = get_melbourne_date()
+    today_str = str(today)
+    yesterday_str = str(today - timedelta(days=1))
     
     # Check daily_init (should run once per day)
     last_init = get_last_daily_init()
