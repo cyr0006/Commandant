@@ -214,7 +214,7 @@ async def check_and_run_scheduled_tasks(channel):
     
     # Check daily_init (should run once per day)
     last_init = get_last_daily_init()
-    if last_init != today_str:
+    if last_init != today_str or today_str not in goal_status.get('system', {}):
         print(f"Running daily_init for {today_str}")
         run_daily_init()
         set_last_daily_init(today_str)
@@ -238,7 +238,7 @@ async def check_and_run_scheduled_tasks(channel):
 
 def run_daily_init():
     """Initialize today's entry for all users"""
-    today = str(date.today())
+    today = str(get_melbourne_date())
     updated = False
 
 
