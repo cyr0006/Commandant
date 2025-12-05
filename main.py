@@ -6,7 +6,7 @@ import discord
 from discord.ext import tasks
 import os
 from dotenv import load_dotenv
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import json
 import requests
 import base64
@@ -188,7 +188,7 @@ async def process_missed_messages(channel):
         print("No previous timestamp found, skipping catch-up")
     
     # Update last processed time to now
-    set_last_processed_time(datetime.now(MELBOURNE_TZ).isoformat())
+    set_last_processed_time(datetime.now(timezone.utc).isoformat())
     await check_and_run_scheduled_tasks(channel)
 
 
@@ -227,7 +227,7 @@ async def check_and_run_scheduled_tasks(channel):
         set_last_daily_finalize(today_str)
     
     # Check weekly_report (Mondays only)
-    today = date.today()
+    today = get_melbourne_date()
     if today.weekday() == 0:  # Monday
         last_report = get_last_weekly_report()
         # Check if we haven't sent report this week
