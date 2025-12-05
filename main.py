@@ -331,7 +331,7 @@ class Client(discord.Client):
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
-            msg_lines = [f"{user}: {count}/30 complete ({(count/30*100):.1f}%) { "🔥" if count >= 6 else ("⚠️" if count < 5 else "✅")}" for user, count in sorted_perf]
+            msg_lines = [f"{user}: {count}/30 complete ({(count/30*100):.1f}%) { "🔥" if count >= 25 else ("⚠️" if count < 20 else "✅")}" for user, count in sorted_perf]
             await message.channel.send("📊 Monthly performance:\n" + "\n".join(msg_lines))
             
         #---- All-Time Leaderboard ----
