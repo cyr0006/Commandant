@@ -182,6 +182,8 @@ async def process_missed_messages(channel):
     
     # Update last processed time to now
     set_last_processed_time(datetime.utcnow().isoformat())
+    await check_and_run_scheduled_tasks(channel)
+
 
 async def process_message_content(message):
     """Process a message's content for goal updates"""
@@ -284,6 +286,12 @@ class Client(discord.Client):
             print("Warning: No suitable channel found")
 
     async def on_message(self, message):
+        channel = discord.utils.get(self.get_all_channels(), name="general")
+
+        if channel:
+            await check_and_run_scheduled_tasks(channel)
+        else:
+            print("Warning: No suitable channel found")
         if message.author == self.user:
             return
         
@@ -337,7 +345,6 @@ class Client(discord.Client):
                 key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
                 reverse=True
             )
-
 
             msg_lines = [
                 f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%) { "🔥" if (complete/total*100) >= 85 else ("⚠️" if (complete/total*100) < 50 else "✅")}"
