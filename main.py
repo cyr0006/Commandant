@@ -239,14 +239,19 @@ async def check_and_run_scheduled_tasks(channel):
 def run_daily_init():
     """Initialize today's entry for all users"""
     today = str(date.today())
+    updated = False
+
+
     for user_key in goal_status.keys():
         if today not in goal_status[user_key]:
             goal_status[user_key][today] = ""
-    save_data()
+            updated = True
+    if updated:
+        save_data()
 
 def run_daily_finalize():
     """Mark yesterday's pending entries as incomplete"""
-    yesterday = str(date.today() - timedelta(days=1))
+    yesterday = str(get_melbourne_date() - timedelta(days=1))
     for user_key, records in goal_status.items():
         if yesterday in records and records[yesterday] == "":
             records[yesterday] = "incomplete"
