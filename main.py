@@ -2,6 +2,7 @@
 # Author: Aryan Cyrus
 
 #========================= Imports and Setup =========================
+import asyncio
 import discord
 from discord.ext import tasks
 import os
@@ -271,6 +272,36 @@ async def send_weekly_report(channel):
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
+#========================= 2 missed goals =========================
+def check_weekly_missed_goals(user_id: str, max_misses: int = 2) -> bool:
+    """Check if user has missed more than max_misses days this week (Mon-Sun)"""
+    records = goal_status.get(user_id, {})
+    if not records:
+        return False
+    
+    today = get_melbourne_date()
+    
+    # Calculate days since Monday (0=Monday, 6=Sunday)
+    days_since_monday = today.weekday()
+
+
+    # Count back to Monday (inclusive)
+    miss_count = 0
+    for i in range(days_since_monday + 1):  # +1 to include today
+        date_str = str(today - timedelta(days=i))
+        
+        if date_str in records:
+            if records[date_str] == "incomplete":
+                miss_count += 1
+                if miss_count > max_misses:
+                    return True
+    return False
+
+async def notify_misses(user_id: str, channel, n: int = 2):
+    """Notify user of n missed goals"""
+    if check_weekly_missed_goals(user_id, n):
+        message = f"⚠️ {user_id}, you have missed your goals for {n} or more days this week, king. Let's get back on track!"
+        await channel.send(message)
 #========================= Discord Client =========================
 class Client(discord.Client):
     async def on_ready(self):
