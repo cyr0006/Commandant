@@ -164,6 +164,7 @@ def run_flask():
 def get_melbourne_date():
     """Get current date in Melbourne timezone"""
     return datetime.now(MELBOURNE_TZ).date()
+
 async def process_missed_messages(channel):
     """Process messages that were sent while bot was offline"""
     last_time = get_last_processed_time()
@@ -189,7 +190,7 @@ async def process_missed_messages(channel):
     
     # Update last processed time to now
     set_last_processed_time(datetime.now(timezone.utc).isoformat())
-    await check_and_run_scheduled_tasks(channel)
+    await check_and_run_scheduled_tasks(channel)    
 
 
 async def process_message_content(message):
@@ -299,17 +300,11 @@ class Client(discord.Client):
             print("Warning: No suitable channel found")
 
     async def on_message(self, message):
-        channel = discord.utils.get(self.get_all_channels(), name="general")
-
-        if channel:
-            await check_and_run_scheduled_tasks(channel)
-        else:
-            print("Warning: No suitable channel found")
         if message.author == self.user:
             return
         
         # Update last processed time whenever we receive a message
-        set_last_processed_time(datetime.now(MELBOURNE_TZ).isoformat())
+        set_last_processed_time(datetime.now(timezone.utc).isoformat())
         
         #---- initialising vars ----
         content = message.content.lower()
