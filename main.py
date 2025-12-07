@@ -353,6 +353,9 @@ class Client(discord.Client):
             await message.channel.send(
                 f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
             )
+            if(check_weekly_missed_goals(user_id)):
+                await notify_misses(user_id, None)
+
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
             performances = performance_all(7)
