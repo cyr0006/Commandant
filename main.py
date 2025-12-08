@@ -229,7 +229,6 @@ async def check_and_run_scheduled_tasks(channel):
         set_last_daily_finalize(today_str)
     
     # Check weekly_report (Mondays only)
-    today = get_melbourne_date()
     if today.weekday() == 0:  # Monday
         last_report = get_last_weekly_report()
         # Check if we haven't sent report this week
@@ -327,6 +326,9 @@ class Client(discord.Client):
             
             # Check and run scheduled tasks
             await check_and_run_scheduled_tasks(channel)
+            if not check_scheduled_tasks.is_running():
+                check_scheduled_tasks.start()
+                
         else:
             print("Warning: No suitable channel found")
 
@@ -354,7 +356,7 @@ class Client(discord.Client):
                 f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
             )
             if(check_weekly_missed_goals(user_id)):
-                await notify_misses(user_id, None)
+                await notify_misses(user_id, message.channel)
 
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
@@ -444,6 +446,12 @@ def all_time_performance() -> dict:
         results[user_key] = (complete_count, total_entries)
     return results
 
+#========================= Scheduled Task Loop ==========================
+@tasks.loop(hours=1)  # Check every hour
+async def check_scheduled_tasks():
+    channel = discord.utils.get(client.get_all_channels(), name="general")
+    if channel:
+        await check_and_run_scheduled_tasks(channel)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
 intents.message_content = True
