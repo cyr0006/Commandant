@@ -369,7 +369,10 @@ class Client(discord.Client):
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
-            msg_lines = [f"{user}: {count}/7 complete" for user, count in sorted_perf]
+            msg_lines = [
+                f"{i+1}) {user}: {count}/7 complete"
+                for i, (user, count) in enumerate(sorted_perf)
+            ]
             await message.channel.send("📊 Weekly performance:\n" + "\n".join(msg_lines))
 
         #---- Monthly Leaderboard ----
@@ -379,7 +382,11 @@ class Client(discord.Client):
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
-            msg_lines = [f"{user}: {count}/30 complete ({(count/30*100):.1f}%) { "🔥" if count >= 25 else ("⚠️" if count < 20 else "✅")}" for user, count in sorted_perf]
+            msg_lines = [
+                f"{i+1}) {user}: {count}/30 complete ({(count/30*100):.1f}%) "
+                f"{'🔥' if count >= 25 else ('⚠️' if count < 20 else '✅')}"
+                for i, (user, count) in enumerate(sorted_perf)
+            ]
             await message.channel.send("📊 Monthly performance:\n" + "\n".join(msg_lines))
             
         #---- All-Time Leaderboard ----
@@ -395,9 +402,11 @@ class Client(discord.Client):
             )
 
             msg_lines = [
-                f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%) { "🔥" if (complete/total*100) >= 85 else ("⚠️" if (complete/total*100) < 50 else "✅")}"
-                for user, (complete, total) in sorted_perf
+                f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
+                f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
+                for i, (user, (complete, total)) in enumerate(sorted_perf)
             ]
+
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
         
