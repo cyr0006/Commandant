@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Commandant - A Discord bot to manage goal tracking and performance
 
 # Author: Aryan Cyrus
