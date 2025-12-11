@@ -310,7 +310,7 @@ class Client(discord.Client):
         Thread(target=run_flask, daemon=True).start()
         
         # Get the channel to work with
-        channel = discord.utils.get(self.get_all_channels(), name="general").
+        channel = discord.utils.get(self.get_all_channels(), name="general")
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
