@@ -1,7 +1,11 @@
+# -*- coding: utf-8 -*-
 # Commandant - A Discord bot to manage goal tracking and performance
+
 # Author: Aryan Cyrus
 
 #========================= Imports and Setup =========================
+
+
 import asyncio
 import discord
 from discord.ext import tasks
@@ -21,12 +25,14 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 MELBOURNE_TZ = ZoneInfo('Australia/Melbourne')
 
 
+
 # GitHub Configuration
 GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
 GITHUB_REPO = os.getenv('GITHUB_REPO')
 GITHUB_FILE_PATH = os.getenv('GITHUB_FILE_PATH', 'get_status.json')
 METADATA_FILE_PATH = 'bot_metadata.json'
+load_dotenv()
 
 #========================= GitHub Storage Functions =========================
 def load_from_github(file_path=GITHUB_FILE_PATH):
@@ -375,7 +381,7 @@ class Client(discord.Client):
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
-            msg_lines = [f"{user}: {count}/30 complete ({(count/30*100):.1f}%) { "🔥" if count >= 25 else ("⚠️" if count < 20 else "✅")}" for user, count in sorted_perf]
+            msg_lines = [f'{user}: {count}/30 complete ({(count/30*100):.1f}%) {"*" if count >= 25 else ("!" if count < 20 else "OK")}' for user, count in sorted_perf]
             await message.channel.send("📊 Monthly performance:\n" + "\n".join(msg_lines))
             
         #---- All-Time Leaderboard ----
@@ -391,7 +397,7 @@ class Client(discord.Client):
             )
 
             msg_lines = [
-                f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%) { "🔥" if (complete/total*100) >= 85 else ("⚠️" if (complete/total*100) < 50 else "✅")}"
+                f'{user}: {complete}/{total} complete ({(complete/total*100):.1f}%) { "*" if (complete/total*100) >= 85 else ("!" if (complete/total*100) < 50 else "OK")}'
                 for user, (complete, total) in sorted_perf
             ]
             report = "\n".join(msg_lines)
