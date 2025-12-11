@@ -315,18 +315,18 @@ class Client(discord.Client):
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
 
-        if not channel:
+        if not evidence or not leaderboard:
             # Fallback: get first text channel
             for ch in self.get_all_channels():
                 if isinstance(ch, discord.TextChannel):
                     channel = ch
                     break
         
-        if channel:
-            print(f"Using channel: {channel.name}")
+        if evidence or leaderboard:
+            print(f"Using channel: {evidence.name}")
             
             # Process any missed messages
-            await process_missed_messages(channel)
+            await process_missed_messages(evidence)
             
             # Check and run scheduled tasks
             await check_and_run_scheduled_tasks(leaderboard)
