@@ -229,7 +229,7 @@ async def check_and_run_scheduled_tasks(channel):
         set_last_daily_finalize(today_str)
     
     # Check weekly_report (Mondays only)
-    if today.weekday() > 0:  # Monday
+    if today.weekday() == 0:  # Monday
         last_report = get_last_weekly_report()
         # Check if we haven't sent report this week
         if not last_report or last_report < today_str:
