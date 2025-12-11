@@ -314,7 +314,7 @@ class Client(discord.Client):
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
-        
+
         if not channel:
             # Fallback: get first text channel
             for ch in self.get_all_channels():
@@ -329,7 +329,7 @@ class Client(discord.Client):
             await process_missed_messages(channel)
             
             # Check and run scheduled tasks
-            await check_and_run_scheduled_tasks(channel)
+            await check_and_run_scheduled_tasks(leaderboard)
             if not check_scheduled_tasks.is_running():
                 check_scheduled_tasks.start()
                 
