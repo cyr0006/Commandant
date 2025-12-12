@@ -259,15 +259,23 @@ def run_daily_finalize():
     save_data()
 
 async def send_weekly_report(channel):
+    
     """Send the weekly all-time report"""
     performances = all_time_performance()
     if not performances:
         return
     
+    sorted_perf = sorted(
+    performances.items(),
+    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
+    reverse=True
+    )
+
     msg_lines = [
-        f"{user}: {complete}/{total} complete ({(complete/total*100):.1f}%)"
-        for user, (complete, total) in performances.items()
-    ]
+        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
+        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
+        for i, (user, (complete, total)) in enumerate(sorted_perf)
+    ]  
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
