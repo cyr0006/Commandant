@@ -335,7 +335,7 @@ class Client(discord.Client):
         #---- Weekly Leaderboard ----
         #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
-            performances = performance_all(7)
+            performances = performance_weekly(7)
             if not performances:
                 await message.channel.send("No data available yet!")
                 return
@@ -437,6 +437,29 @@ def performance_all(n: int = 7) -> dict:
         results[user_key] = complete_count
     return results
 
+def performance_weekly() -> dict:
+    results = {}
+    for user_key, records in goal_status.items():
+        sorted_dates = sorted(records.keys(), reverse=True)
+
+        index = None
+        for i, d in enumerate(sorted_dates):
+            date_obj = datetime.strptime(d, "%Y-%m-%d").date()
+            if date_obj.weekday() == 0:  # Monday
+                index = i
+                break
+
+        if index is None:
+            # No Monday found, just use all available dates
+            last_n = sorted_dates
+        else:
+            # Include the Monday itself
+            last_n = sorted_dates[:index+1]
+
+        complete_count = sum(1 for d in last_n if records[d] == "complete")
+        results[user_key] = f"{complete_count}/{len(last_n)} goals done"
+
+    return results
 #========================= All-Time Performance Calculation ==========================
 def all_time_performance() -> dict:
     """
