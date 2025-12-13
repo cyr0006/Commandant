@@ -341,7 +341,7 @@ class Client(discord.Client):
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
             msg_lines = [
-                f"{i+1}) {user}: {count}/7 complete"
+                f"{i+1}) {user}: {count}"
                 for i, (user, count) in enumerate(sorted_perf)
             ]
             await message.channel.send("📊 Weekly performance:\n" + "\n".join(msg_lines))
@@ -457,7 +457,7 @@ def performance_weekly() -> dict:
             last_n = sorted_dates[:index+1]
 
         complete_count = sum(1 for d in last_n if records[d] == "complete")
-        results[user_key] = f"{complete_count}/{len(last_n)} goals done"
+        results[user_key] = f"{complete_count}/{len(last_n)} goals complete"
 
     return results
 #========================= All-Time Performance Calculation ==========================
@@ -480,7 +480,7 @@ async def check_scheduled_tasks():
         await check_and_run_scheduled_tasks(leaderboard)
 
 #========================= Nagger Task Loop ==========================
-@tasks.loop(hours=24)  # Check every day
+@tasks.loop(hours=12)  # Check every day
 async def nag():
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
