@@ -356,7 +356,15 @@ class Client(discord.Client):
         user_id = str(message.author.name)
         
         #---- Goal Completion ----
-        if "goals complete" in content or "goals completed" in content:
+        if "goals complete" in content or "goals completed" in content or "cum" in content:
+            if message.channel.name == "evidence":
+                target_date = update_latest_status(user_id, "complete")
+                await message.channel.send(
+                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                )
+
+        #---- Goal Completion previous day ----
+        elif "!prev" in content:
             if message.channel.name == "evidence":
                 target_date = update_latest_status(user_id, "complete")
                 await message.channel.send(
@@ -364,12 +372,13 @@ class Client(discord.Client):
                 )
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
-            target_date = update_latest_status(user_id, "incomplete")
-            await message.channel.send(
-                f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
-            )
-            if(check_weekly_missed_goals(user_id)):
-                await notify_misses(user_id, message.channel)
+            if message.channel.name == "evidence":
+                target_date = update_latest_status(user_id, "incomplete")
+                await message.channel.send(
+                    f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
+                )
+                if(check_weekly_missed_goals(user_id)):
+                    await notify_misses(user_id, message.channel)
 
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
@@ -432,6 +441,7 @@ def update_latest_status(user_id: str, status: str) -> str:
     tz = ZoneInfo("Australia/Melbourne")
     now = datetime.now(tz)
 
+    #if complete by 4am, count for previous day
     if now.hour < 4:
         target_date = (now - timedelta(days=1)).date()
     else: target_date = now.date()
@@ -440,11 +450,28 @@ def update_latest_status(user_id: str, status: str) -> str:
     if target_date_str not in goal_status[user_id]:
         goal_status[user_id][target_date_str] = ""
 
-    sorted_dates = sorted(goal_status[user_id].keys())
     
     goal_status[user_id][target_date] = status
     save_data()
+
+    return target_date
+
+def update_prev_status(user_id: str, status: str) -> str:
+    """Update the latest pending status for a user"""
+    goal_status.setdefault(user_id, {})
+    # Get Melbourne time
+    tz = ZoneInfo("Australia/Melbourne")
+    now = datetime.now(tz)
+
+    target_date = (now - timedelta(days=1)).date()
+    target_date_str = str(target_date)
+
+    if target_date_str not in goal_status[user_id]:
+        goal_status[user_id][target_date_str] = ""
     
+    goal_status[user_id][target_date] = status
+    save_data()
+
     return target_date
 
 #========================= X-Day Performance Calculation ==========================
