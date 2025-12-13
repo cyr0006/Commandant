@@ -357,10 +357,11 @@ class Client(discord.Client):
         
         #---- Goal Completion ----
         if "goals complete" in content or "goals completed" in content:
-            target_date = update_latest_status(user_id, "complete")
-            await message.channel.send(
-                f"✅ Marked goals as complete for {message.author.name} on {target_date}."
-            )
+            if message.channel.name == "evidence":
+                target_date = update_latest_status(user_id, "complete")
+                await message.channel.send(
+                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                )
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             target_date = update_latest_status(user_id, "incomplete")
