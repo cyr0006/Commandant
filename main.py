@@ -451,9 +451,18 @@ def all_time_performance() -> dict:
 #========================= Scheduled Task Loop ==========================
 @tasks.loop(hours=1)  # Check every hour
 async def check_scheduled_tasks():
-    channel = discord.utils.get(client.get_all_channels(), name="general")
-    if channel:
-        await check_and_run_scheduled_tasks(channel)
+    leaderboard = discord.utils.get(client.get_all_channels(), name="leaderboard")
+    if leaderboard:
+        await check_and_run_scheduled_tasks(leaderboard)
+
+#========================= Nagger Task Loop ==========================
+@tasks.loop(days=1)  # Check every day
+async def nag():
+    goals = discord.utils.get(client.get_all_channels(), name="goals")
+    users = goal_status.keys()
+    for user_id in users:
+        if(check_weekly_missed_goals(user_id)):
+            await notify_misses(user_id, goals)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
 intents.message_content = True
