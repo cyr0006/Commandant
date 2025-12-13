@@ -318,7 +318,7 @@ class Client(discord.Client):
         #---- Goal Completion previous day ----
         elif "!prev" in content:
             if message.channel.name == "evidence":
-                target_date = update_latest_status(user_id, "complete")
+                target_date = update_prev_status(user_id, "complete")
                 await message.channel.send(
                     f"✅ Marked goals as complete for {message.author.name} on {target_date}."
                 )
