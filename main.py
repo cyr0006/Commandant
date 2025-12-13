@@ -428,22 +428,23 @@ class Client(discord.Client):
 def update_latest_status(user_id: str, status: str) -> str:
     """Update the latest pending status for a user"""
     goal_status.setdefault(user_id, {})
+    # Get Melbourne time
+    tz = ZoneInfo("Australia/Melbourne")
+    now = datetime.now(tz)
+
+    if now.hour < 4:
+        target_date = (now - timedelta(days=1)).date()
+    else: target_date = now.date()
+    target_date_str = str(target_date)
+
+    if target_date_str not in goal_status[user_id]:
+        goal_status[user_id][target_date_str] = ""
 
     sorted_dates = sorted(goal_status[user_id].keys())
-
-    target_date = None
-    for d in reversed(sorted_dates):
-        if goal_status[user_id][d] == "":
-            target_date = d
-            break
-
-    if target_date is None:
-        target_date = str(get_melbourne_date())
-        if target_date not in goal_status[user_id]:
-            goal_status[user_id][target_date] = ""
-
+    
     goal_status[user_id][target_date] = status
     save_data()
+    
     return target_date
 
 #========================= X-Day Performance Calculation ==========================
