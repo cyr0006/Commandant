@@ -480,7 +480,7 @@ async def check_scheduled_tasks():
         await check_and_run_scheduled_tasks(leaderboard)
 
 #========================= Nagger Task Loop ==========================
-@tasks.loop(days=1)  # Check every day
+@tasks.loop(hours=24)  # Check every day
 async def nag():
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
