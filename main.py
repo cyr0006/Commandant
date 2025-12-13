@@ -345,9 +345,6 @@ class Client(discord.Client):
         if message.author == self.user:
             return
         
-        # Update last processed time whenever we receive a message
-        set_last_processed_time(datetime.now(timezone.utc).isoformat())
-        
         #---- initialising vars ----
         content = message.content.lower()
         user_id = str(message.author.name)
