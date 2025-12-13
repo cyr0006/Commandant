@@ -335,6 +335,9 @@ class Client(discord.Client):
         #---- Weekly Leaderboard ----
         #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
+            global goal_status, current_sha
+            goal_status, current_sha = load_from_github() 
+
             performances = performance_weekly()
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -348,6 +351,9 @@ class Client(discord.Client):
 
         #---- Monthly Leaderboard ----
         elif content.startswith("!monthly"):
+            global goal_status, current_sha
+            goal_status, current_sha = load_from_github() 
+
             performances = performance_all(30)
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -362,6 +368,9 @@ class Client(discord.Client):
             
         #---- All-Time Leaderboard ----
         elif content.startswith("!alltime"):
+            global goal_status, current_sha
+            goal_status, current_sha = load_from_github() 
+
             performances = all_time_performance()
             if not performances:
                 await message.channel.send("No data available yet!")
