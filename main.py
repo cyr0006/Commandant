@@ -90,17 +90,17 @@ def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
 #========================= Metadata Management =========================
 metadata, metadata_sha = load_from_github(METADATA_FILE_PATH)
 
-def get_last_processed_time():
-    """Get the last time we processed messages"""
-    return metadata.get('last_processed', None)
+# def get_last_processed_time():
+#     """Get the last time we processed messages"""
+#     return metadata.get('last_processed', None)
 
-def set_last_processed_time(timestamp):
-    """Update the last processed timestamp"""
-    global metadata, metadata_sha
-    metadata['last_processed'] = timestamp
-    save_to_github(metadata, metadata_sha, METADATA_FILE_PATH)
-    # Reload to get new SHA
-    metadata, metadata_sha = load_from_github(METADATA_FILE_PATH)
+# def set_last_processed_time(timestamp):
+#     """Update the last processed timestamp"""
+#     global metadata, metadata_sha
+#     metadata['last_processed'] = timestamp
+#     save_to_github(metadata, metadata_sha, METADATA_FILE_PATH)
+#     # Reload to get new SHA
+#     metadata, metadata_sha = load_from_github(METADATA_FILE_PATH)
 
 def get_last_daily_init():
     """Get the last date we ran daily_init"""
@@ -194,19 +194,19 @@ async def process_missed_messages(channel):
     await check_and_run_scheduled_tasks(channel)    
 
 
-async def process_message_content(message):
-    """Process a message's content for goal updates"""
-    content = message.content.lower()
-    user_id = str(message.author.name)
+# async def process_message_content(message):
+#     """Process a message's content for goal updates"""
+#     content = message.content.lower()
+#     user_id = str(message.author.name)
     
-    if "goals complete" in content or "goals completed" in content:
-        target_date = update_latest_status(user_id, "complete")
-        print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
-        await message.add_reaction("✅")
-    elif "goals incomplete" in content or "goals failed" in content:
-        target_date = update_latest_status(user_id, "incomplete")
-        await message.add_reaction("❌")
-        print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
+#     if "goals complete" in content or "goals completed" in content:
+#         target_date = update_latest_status(user_id, "complete")
+#         print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
+#         await message.add_reaction("✅")
+#     elif "goals incomplete" in content or "goals failed" in content:
+#         target_date = update_latest_status(user_id, "incomplete")
+#         await message.add_reaction("❌")
+#         print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
 
 async def check_and_run_scheduled_tasks(channel):
     """Check if any scheduled tasks need to run"""
@@ -332,9 +332,6 @@ class Client(discord.Client):
         
         if evidence or leaderboard:
             print(f"Using channel: {evidence.name}")
-            
-            # Process any missed messages
-            await process_missed_messages(evidence)
             
             # Check and run scheduled tasks
             await check_and_run_scheduled_tasks(leaderboard)
