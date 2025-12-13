@@ -335,7 +335,7 @@ class Client(discord.Client):
         #---- Weekly Leaderboard ----
         #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
-            performances = performance_weekly(7)
+            performances = performance_weekly()
             if not performances:
                 await message.channel.send("No data available yet!")
                 return
