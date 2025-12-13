@@ -404,7 +404,7 @@ def update_latest_status(user_id: str, status: str) -> str:
         goal_status[user_id][target_date_str] = ""
 
     
-    goal_status[user_id][target_date] = status
+    goal_status[user_id][target_date_str] = status 
     save_data()
 
     return target_date
@@ -422,7 +422,7 @@ def update_prev_status(user_id: str, status: str) -> str:
     if target_date_str not in goal_status[user_id]:
         goal_status[user_id][target_date_str] = ""
     
-    goal_status[user_id][target_date] = status
+    goal_status[user_id][target_date_str] = status 
     save_data()
 
     return target_date
