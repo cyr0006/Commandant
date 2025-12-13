@@ -166,6 +166,48 @@ def get_melbourne_date():
     """Get current date in Melbourne timezone"""
     return datetime.now(MELBOURNE_TZ).date()
 
+# async def process_missed_messages(channel):
+#     """Process messages that were sent while bot was offline"""
+#     last_time = get_last_processed_time()
+    
+#     if last_time:
+#         last_datetime = datetime.fromisoformat(last_time)
+#         print(f"Processing messages since {last_datetime}")
+        
+#         # Fetch messages after last_datetime
+#         messages = []
+#         async for message in channel.history(after=last_datetime, oldest_first=True):
+#             if message.author.bot:
+#                 continue
+#             messages.append(message)
+        
+#         print(f"Found {len(messages)} missed messages")
+        
+#         # Process each missed message
+#         for msg in messages:
+#             await process_message_content(msg)
+#     else:
+#         print("No previous timestamp found, skipping catch-up")
+    
+#     # Update last processed time to now
+#     set_last_processed_time(datetime.now(timezone.utc).isoformat())
+#     await check_and_run_scheduled_tasks(channel)    
+
+
+# async def process_message_content(message):
+#     """Process a message's content for goal updates"""
+#     content = message.content.lower()
+#     user_id = str(message.author.name)
+    
+#     if "goals complete" in content or "goals completed" in content:
+#         target_date = update_latest_status(user_id, "complete")
+#         print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
+#         await message.add_reaction("✅")
+#     elif "goals incomplete" in content or "goals failed" in content:
+#         target_date = update_latest_status(user_id, "incomplete")
+#         await message.add_reaction("❌")
+#         print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
+
 async def check_and_run_scheduled_tasks(channel):
     """Check if any scheduled tasks need to run"""
     today = get_melbourne_date()
