@@ -333,6 +333,7 @@ class Client(discord.Client):
                     await notify_misses(user_id, message.channel)
 
         #---- Weekly Leaderboard ----
+        #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
             performances = performance_all(7)
             if not performances:
