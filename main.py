@@ -484,6 +484,9 @@ def all_time_performance() -> dict:
 #========================= Scheduled Task Loop ==========================
 @tasks.loop(hours=1)  # Check every hour
 async def check_scheduled_tasks():
+    global goal_status, current_sha
+    goal_status, current_sha = load_from_github() 
+    
     leaderboard = discord.utils.get(client.get_all_channels(), name="leaderboard")
     if leaderboard:
         await check_and_run_scheduled_tasks(leaderboard)
