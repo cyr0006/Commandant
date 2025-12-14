@@ -389,6 +389,20 @@ class Client(discord.Client):
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
         
+        elif content.startswith("!help"):
+            help_message = (
+                "📋 **Bot Commands:**\n"
+                "• Type 'goals complete' or 'goals completed' or 'cum' in #evidence to mark today's goals as complete.\n"
+                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
+                "• Type 'goals incomplete' or 'goals failed' in #evidence to mark today's goals as incomplete.\n"
+                "• Type '!weekly' to see the weekly performance leaderboard.\n"
+                "• Type '!monthly' to see the monthly performance leaderboard.\n"
+                "• Type '!alltime' to see the all-time performance leaderboard.\n"
+                "• Type '!help' to see this help message."
+            )
+            await message.channel.send(help_message)
+
+        
         #---- Force Check Tasks (admin command) ----
         elif content.startswith("!check-tasks"):
             await check_and_run_scheduled_tasks(message.channel)
