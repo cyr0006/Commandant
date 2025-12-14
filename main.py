@@ -7,7 +7,7 @@ import discord
 from discord.ext import tasks
 import os
 from dotenv import load_dotenv
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 import json
 import requests
 import base64
@@ -295,7 +295,10 @@ class Client(discord.Client):
             await check_and_run_scheduled_tasks(leaderboard)
             if not check_scheduled_tasks.is_running():
                 check_scheduled_tasks.start()
-                
+
+            #begin nagger loop    
+            if not nag.is_running():
+                nag.start()
         else:
             print("Warning: No suitable channel found")
 
@@ -505,8 +508,13 @@ async def check_scheduled_tasks():
         await check_and_run_scheduled_tasks(leaderboard)
 
 #========================= Nagger Task Loop ==========================
-@tasks.loop(hours=12)  # Check every day
+@tasks.loop(time=[
+    time(hour=9, minute=0, tzinfo=MELBOURNE_TZ)  # 9 AM Melbourne
+])  # Check every day
 async def nag():
+    global goal_status, current_sha
+    goal_status, current_sha = load_from_github()
+
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
     for user_id in users:
