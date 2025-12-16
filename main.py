@@ -402,6 +402,7 @@ class Client(discord.Client):
                 "• Type '!weekly' to see the weekly performance leaderboard.\n"
                 "• Type '!monthly' to see the monthly performance leaderboard.\n"
                 "• Type '!alltime' to see the all-time performance leaderboard.\n"
+                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
                 "• Type '!help' to see this help message."
             )
             await message.channel.send(help_message)
