@@ -392,6 +392,7 @@ class Client(discord.Client):
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
         
+        #---- Help commands ----
         elif content.startswith("!help"):
             help_message = (
                 "📋 **Bot Commands:**\n"
@@ -404,13 +405,37 @@ class Client(discord.Client):
                 "• Type '!help' to see this help message."
             )
             await message.channel.send(help_message)
-
+        #---- Custom Date Completions ----
+        elif content.startswith("!mark"):
+            if message.channel.name == "evidence":
+                custom_date = content.split(" ")[1]
+                if mark_goal_custom_date(user_id, custom_date, "complete"):
+                    await message.channel.send(
+                        f"✅ Marked goals as complete for {message.author.name} on {custom_date}."
+                    )
+                else:
+                    await message.channel.send(
+                        f"❌ Failed to mark goals for {message.author.name} on {custom_date}. Please check the date format (YYYY-MM-DD)."
+                    )
+           
         
         #---- Force Check Tasks (admin command) ----
         elif content.startswith("!check-tasks"):
             await check_and_run_scheduled_tasks(message.channel)
             await message.channel.send("✅ Checked and ran any pending scheduled tasks!")
 
+#========================= Custom Date Goal Marking ==========================
+def mark_goal_custom_date(user_id: str, target_date: str, status: str) -> bool:
+    """Update the goal status for a user on a custom date"""
+    goal_status.setdefault(user_id, {})
+
+    if target_date not in goal_status[user_id]:
+        goal_status[user_id][target_date] = ""
+    
+    goal_status[user_id][target_date] = status 
+    save_data()
+
+    return True
 #========================= Update Latest pending status ==========================
 def update_latest_status(user_id: str, status: str) -> str:
     """Update the latest pending status for a user"""
