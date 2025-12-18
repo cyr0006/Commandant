@@ -316,7 +316,7 @@ class Client(discord.Client):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(user_id, "complete")
                 await message.channel.send(
-                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                    f"✅ Marked goals as complete for {message.author.display_name} on {target_date}."
                 )
 
         #---- Goal Completion previous day ----
@@ -324,14 +324,14 @@ class Client(discord.Client):
             if message.channel.name == "evidence":
                 target_date = update_prev_status(user_id, "complete")
                 await message.channel.send(
-                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                    f"✅ Marked goals as complete for {message.author.display_name} on {target_date}."
                 )
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
                 target_date = update_latest_status(user_id, "incomplete")
                 await message.channel.send(
-                    f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
+                    f"❌ Marked goals as incomplete for {message.author.display_name} on {target_date}."
                 )
                 if(check_weekly_missed_goals(user_id)):
                     await notify_misses(user_id, message.channel)
@@ -411,11 +411,11 @@ class Client(discord.Client):
                 custom_date = content.split(" ")[1]
                 if mark_goal_custom_date(user_id, custom_date, "complete"):
                     await message.channel.send(
-                        f"✅ Marked goals as complete for {message.author.name} on {custom_date}."
+                        f"✅ Marked goals as complete for {message.author.display_name} on {custom_date}."
                     )
                 else:
                     await message.channel.send(
-                        f"❌ Failed to mark goals for {message.author.name} on {custom_date}. Please check the date format (YYYY-MM-DD)."
+                        f"❌ Failed to mark goals for {message.author.display_name} on {custom_date}. Please check the date format (YYYY-MM-DD)."
                     )
            
         
