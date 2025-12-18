@@ -2,7 +2,7 @@
 # Author: Aryan Cyrus
 
 #========================= Imports and Setup =========================
-import asyncio
+import re
 import discord
 from discord.ext import tasks
 import os
@@ -312,27 +312,22 @@ class Client(discord.Client):
         user_id = str(message.author.name)
         
         #---- Goal Completion ----
-        if "goals complete" in content or "goals completed" in content or "cum" in content:
+        if re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(user_id, "complete")
-                await message.channel.send(
-                    f"✅ Marked goals as complete for {message.author.display_name} on {target_date}."
-                )
+                await message.add_reaction("✅")
 
         #---- Goal Completion previous day ----
         elif "!prev" in content:
             if message.channel.name == "evidence":
                 target_date = update_prev_status(user_id, "complete")
-                await message.channel.send(
-                    f"✅ Marked goals as complete for {message.author.display_name} on {target_date}."
-                )
+                await message.add_reaction("✅")
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
                 target_date = update_latest_status(user_id, "incomplete")
-                await message.channel.send(
-                    f"❌ Marked goals as incomplete for {message.author.display_name} on {target_date}."
-                )
+                await message.add_reaction("❌")
+
                 if(check_weekly_missed_goals(user_id)):
                     await notify_misses(user_id, message.channel)
 
@@ -410,13 +405,9 @@ class Client(discord.Client):
             if message.channel.name == "evidence":
                 custom_date = content.split(" ")[1]
                 if mark_goal_custom_date(user_id, custom_date, "complete"):
-                    await message.channel.send(
-                        f"✅ Marked goals as complete for {message.author.display_name} on {custom_date}."
-                    )
+                    await message.add_reaction("✅")
                 else:
-                    await message.channel.send(
-                        f"❌ Failed to mark goals for {message.author.display_name} on {custom_date}. Please check the date format (YYYY-MM-DD)."
-                    )
+                    await message.add_reaction("❌")
            
         
         #---- Force Check Tasks (admin command) ----
