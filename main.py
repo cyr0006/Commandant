@@ -262,11 +262,10 @@ def check_weekly_missed_goals(user_id: str, max_misses: int = 2) -> bool:
                     return True
     return False
 
-async def notify_misses(user_id: str, channel, n: int = 2):
+async def notify_misses(user_obj, channel, n: int = 2):
     """Notify user of n missed goals"""
-    if check_weekly_missed_goals(user_id, n):
-        message = f"⚠️ {user_id}, you have missed your goals for {n} or more days this week, king. Let's get back on track!"
-        await channel.send(message)
+    message = f"⚠️ {user_obj.mention}, you have missed your goals for {n} or more days this week, king. Let's get back on track!"
+    await channel.send(message)
 #========================= Discord Client =========================
 class Client(discord.Client):
     async def on_ready(self):
@@ -545,7 +544,8 @@ async def nag():
     users = goal_status.keys()
     for user_id in users:
         if(check_weekly_missed_goals(user_id)):
-            await notify_misses(user_id, goals)
+            user_obj = await goals.guild.fetch_member(user_id) 
+            await notify_misses(user_obj, goals)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
 intents.message_content = True
