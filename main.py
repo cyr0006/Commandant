@@ -526,7 +526,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=19, minute=54, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
+    time(hour=20, minute=10, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
