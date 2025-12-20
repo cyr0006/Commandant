@@ -264,6 +264,9 @@ def check_weekly_missed_goals(user_id: str, max_misses: int = 2) -> bool:
 
 async def notify_misses(user_obj, channel, n: int = 2):
     """Notify user of n missed goals"""
+    if not user_obj:
+        print(f"[NOTIFY] Cannot notify - user_obj is None")
+        return
     message = f"⚠️ {user_obj.mention}, you have missed your goals for {n} or more days this week, king. Let's get back on track!"
     await channel.send(message)
 #========================= Discord Client =========================
