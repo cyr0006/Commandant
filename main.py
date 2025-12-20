@@ -58,9 +58,8 @@ def load_from_github(file_path=GITHUB_FILE_PATH):
 
 def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     """Save JSON data to GitHub"""
-    branch = process.env.GITHUB_BRANCH || 'main'; // defaults to 'main' if not specified
 
-    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref=${branch}"
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref=${GITHUB_BRANCH}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
