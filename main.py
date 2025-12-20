@@ -524,7 +524,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=9, minute=0, tzinfo=MELBOURNE_TZ)  # 9 AM Melbourne
+    time(hour=12, minute=50, tzinfo=MELBOURNE_TZ)  # 9 AM Melbourne
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -534,7 +534,7 @@ async def nag():
     users = goal_status.keys()
     for username in users:
         if(check_weekly_missed_goals(username)):
-            user_obj = await goals.guild.fetch_member(username) 
+            user_obj = discord.utils.get(goals.guild.members, name=username) 
             await notify_misses(user_obj, goals)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
