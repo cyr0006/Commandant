@@ -238,9 +238,9 @@ async def send_weekly_report(channel):
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
 #========================= 2 missed goals =========================
-def check_weekly_missed_goals(user_id: str, max_misses: int = 2) -> bool:
+def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     """Check if user has missed more than max_misses days this week (Mon-Sun)"""
-    records = goal_status.get(user_id, {})
+    records = goal_status.get(username, {})
     if not records:
         return False
     
@@ -293,10 +293,10 @@ class Client(discord.Client):
         if evidence or leaderboard:
             print(f"Using channel: {evidence.name}")
             
-            # # Check and run scheduled tasks
-            # await check_and_run_scheduled_tasks(leaderboard)
-            # if not check_scheduled_tasks.is_running():
-            #     check_scheduled_tasks.start()
+            # Check and run scheduled tasks
+            await check_and_run_scheduled_tasks(leaderboard)
+            if not check_scheduled_tasks.is_running():
+                check_scheduled_tasks.start()
 
             #begin nagger loop    
             if not nag.is_running():
@@ -527,7 +527,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=12, minute=50, tzinfo=MELBOURNE_TZ)  # 9 AM Melbourne
+    time(hour=14, minute=5, tzinfo=MELBOURNE_TZ)  # 14:05 Melbourne
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
