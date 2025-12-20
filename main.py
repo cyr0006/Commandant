@@ -533,7 +533,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=19, minute=54, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
+    time(hour=20, minute=22, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -549,6 +549,7 @@ async def nag():
             for m in goals.guild.members:
                 if m.name.lower() == username.lower():
                     user_obj = m
+                    print(f"[NAG] Found user_obj for {username}: {user_obj.name, user_obj.display_name}")
             if user_obj is None:
                 print(f"[NAG] Cannot notify - user_obj is None for {username}")
                 continue
