@@ -274,7 +274,7 @@ class Client(discord.Client):
         # Start Flask health check server
         Thread(target=run_flask, daemon=True).start()
         
-        # Get the channel to work with
+        # Get the channels to work with
         channel = discord.utils.get(self.get_all_channels(), name="general")
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
@@ -290,10 +290,10 @@ class Client(discord.Client):
         if evidence or leaderboard:
             print(f"Using channel: {evidence.name}")
             
-            # Check and run scheduled tasks
-            await check_and_run_scheduled_tasks(leaderboard)
-            if not check_scheduled_tasks.is_running():
-                check_scheduled_tasks.start()
+            # # Check and run scheduled tasks
+            # await check_and_run_scheduled_tasks(leaderboard)
+            # if not check_scheduled_tasks.is_running():
+            #     check_scheduled_tasks.start()
 
             #begin nagger loop    
             if not nag.is_running():
@@ -309,28 +309,27 @@ class Client(discord.Client):
         
         #---- initialising vars ----
         content = message.content.lower()
-        user_id = str(message.author.name)
+        username = str(message.author.name)
         
         #---- Goal Completion ----
         if re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
-                target_date = update_latest_status(user_id, "complete")
+                target_date = update_latest_status(username, "complete")
                 await message.add_reaction("✅")
 
         #---- Goal Completion previous day ----
         elif "!prev" in content:
             if message.channel.name == "evidence":
-                target_date = update_prev_status(user_id, "complete")
+                target_date = update_prev_status(username, "complete")
                 await message.add_reaction("✅")
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
-                target_date = update_latest_status(user_id, "incomplete")
+                target_date = update_latest_status(username, "incomplete")
                 await message.add_reaction("❌")
 
-                if(check_weekly_missed_goals(user_id)):
-                    await notify_misses(user_id, message.channel)
-
+                if(check_weekly_missed_goals(username)):
+                    await notify_misses(username, message.channel)
         #---- Weekly Leaderboard ----
         #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
@@ -404,7 +403,7 @@ class Client(discord.Client):
         elif content.startswith("!mark"):
             if message.channel.name == "evidence":
                 custom_date = content.split(" ")[1]
-                if mark_goal_custom_date(user_id, custom_date, "complete"):
+                if mark_goal_custom_date(username, custom_date, "complete"):
                     await message.add_reaction("✅")
                 else:
                     await message.add_reaction("❌")
@@ -416,21 +415,21 @@ class Client(discord.Client):
             await message.channel.send("✅ Checked and ran any pending scheduled tasks!")
 
 #========================= Custom Date Goal Marking ==========================
-def mark_goal_custom_date(user_id: str, target_date: str, status: str) -> bool:
+def mark_goal_custom_date(username: str, target_date: str, status: str) -> bool:
     """Update the goal status for a user on a custom date"""
-    goal_status.setdefault(user_id, {})
+    goal_status.setdefault(username, {})
 
-    if target_date not in goal_status[user_id]:
-        goal_status[user_id][target_date] = ""
+    if target_date not in goal_status[username]:
+        goal_status[username][target_date] = ""
     
-    goal_status[user_id][target_date] = status 
+    goal_status[username][target_date] = status 
     save_data()
 
     return True
 #========================= Update Latest pending status ==========================
-def update_latest_status(user_id: str, status: str) -> str:
+def update_latest_status(username: str, status: str) -> str:
     """Update the latest pending status for a user"""
-    goal_status.setdefault(user_id, {})
+    goal_status.setdefault(username, {})
     # Get Melbourne time
     tz = ZoneInfo("Australia/Melbourne")
     now = datetime.now(tz)
@@ -441,18 +440,18 @@ def update_latest_status(user_id: str, status: str) -> str:
     else: target_date = now.date()
     target_date_str = str(target_date)
 
-    if target_date_str not in goal_status[user_id]:
-        goal_status[user_id][target_date_str] = ""
+    if target_date_str not in goal_status[username]:
+        goal_status[username][target_date_str] = ""
 
     
-    goal_status[user_id][target_date_str] = status 
+    goal_status[username][target_date_str] = status 
     save_data()
 
     return target_date
 
-def update_prev_status(user_id: str, status: str) -> str:
+def update_prev_status(username: str, status: str) -> str:
     """Update the latest pending status for a user"""
-    goal_status.setdefault(user_id, {})
+    goal_status.setdefault(username, {})
     # Get Melbourne time
     tz = ZoneInfo("Australia/Melbourne")
     now = datetime.now(tz)
@@ -460,10 +459,10 @@ def update_prev_status(user_id: str, status: str) -> str:
     target_date = (now - timedelta(days=1)).date()
     target_date_str = str(target_date)
 
-    if target_date_str not in goal_status[user_id]:
-        goal_status[user_id][target_date_str] = ""
+    if target_date_str not in goal_status[username]:
+        goal_status[username][target_date_str] = ""
     
-    goal_status[user_id][target_date_str] = status 
+    goal_status[username][target_date_str] = status 
     save_data()
 
     return target_date
@@ -533,9 +532,9 @@ async def nag():
 
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
-    for user_id in users:
-        if(check_weekly_missed_goals(user_id)):
-            user_obj = await goals.guild.fetch_member(user_id) 
+    for username in users:
+        if(check_weekly_missed_goals(username)):
+            user_obj = await goals.guild.fetch_member(username) 
             await notify_misses(user_obj, goals)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
