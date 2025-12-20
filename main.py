@@ -15,7 +15,6 @@ from flask import Flask
 from threading import Thread
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-load_dotenv()
 
 
 load_dotenv()
@@ -59,7 +58,7 @@ def load_from_github(file_path=GITHUB_FILE_PATH):
 def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     """Save JSON data to GitHub"""
 
-    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref=${GITHUB_BRANCH}"
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
@@ -72,6 +71,8 @@ def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     payload = {
         "message": f"Update {file_path} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         "content": encoded_content,
+        "branch": GITHUB_BRANCH
+
     }
     
     # If we have a SHA (file exists), include it for update
