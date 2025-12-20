@@ -13,8 +13,10 @@ import requests
 import base64
 from flask import Flask
 from threading import Thread
-from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
+from dotenv import load_dotenv
+load_dotenv()
+
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -27,11 +29,11 @@ GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
 GITHUB_REPO = os.getenv('GITHUB_REPO')
 GITHUB_FILE_PATH = os.getenv('GITHUB_FILE_PATH', 'get_status.json')
 METADATA_FILE_PATH = 'bot_metadata.json'
-
+GITHUB_BRANCH = os.getenv('GITHUB_BRANCH', 'test')
 #========================= GitHub Storage Functions =========================
 def load_from_github(file_path=GITHUB_FILE_PATH):
     """Load JSON data from GitHub"""
-    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}"
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref={GITHUB_BRANCH}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
@@ -56,7 +58,9 @@ def load_from_github(file_path=GITHUB_FILE_PATH):
 
 def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     """Save JSON data to GitHub"""
-    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}"
+    branch = process.env.GITHUB_BRANCH || 'main'; // defaults to 'main' if not specified
+
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref=${branch}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
