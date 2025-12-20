@@ -536,7 +536,7 @@ async def nag():
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
     for username in users:
-        if(check_weekly_missed_goals(username)):
+        if(check_weekly_missed_goals(username, 2)):
             user_obj = discord.utils.get(goals.guild.members, name=username) 
             await notify_misses(user_obj, goals)
 #========================= Discord Client Run =========================
