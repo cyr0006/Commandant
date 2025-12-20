@@ -254,8 +254,6 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     days_since_monday = today.weekday()
 
 
-    # Count back to Monday (inclusive)
-    print(f"Checking missed goals for {username} from {today} back to Monday")
     miss_count = 0
     for i in range(days_since_monday+1):  # +1 to include today
         date_str = str(today - timedelta(days=i))
@@ -266,7 +264,6 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     if miss_count > max_misses:
         return True, miss_count
     return False, miss_count
-
 
 async def notify_misses(user_obj, channel, missed: int = 2):
     """Notify user of n missed goals"""
@@ -533,7 +530,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=20, minute=22, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
+    time(hour=20, minute=26, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -549,7 +546,6 @@ async def nag():
             for m in goals.guild.members:
                 if m.name.lower() == username.lower():
                     user_obj = m
-                    print(f"[NAG] Found user_obj for {username}: {user_obj.name, user_obj.display_name}")
             if user_obj is None:
                 print(f"[NAG] Cannot notify - user_obj is None for {username}")
                 continue
