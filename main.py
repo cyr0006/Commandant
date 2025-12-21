@@ -249,15 +249,15 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     # Calculate days since Monday (0=Monday, 6=Sunday)
     days_since_monday = today.weekday()
 
-
+    print("checking misses for", username)
     miss_count = 0
     for i in range(days_since_monday+1):  # +1 to include today
         date_str = str(today - timedelta(days=i))
-        print(date_str)
         if date_str in records:
             if records[date_str] == "incomplete":
                 miss_count += 1
     if miss_count > max_misses:
+        print(f"{username} has missed {miss_count} days this week.")
         return True, miss_count
     return False, miss_count
 
@@ -527,7 +527,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=11, minute=24, tzinfo=MELBOURNE_TZ)  #  Melbourne time
+    time(hour=11, minute=43, tzinfo=MELBOURNE_TZ)  #  Melbourne time
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -543,10 +543,12 @@ async def nag():
             for m in goals.guild.members:
                 if m.name.lower() == username.lower():
                     user_obj = m
+                    print(f"[NAG] Found user_obj for {username}, {m.name}")
             if user_obj is None:
                 print(f"[NAG] Cannot notify - user_obj is None for {username}")
                 continue
 
+            print(f"[NAG] Notifying {username} of {miss_count} missed goals")
             await notify_misses(user_obj, goals, miss_count)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
