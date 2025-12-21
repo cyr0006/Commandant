@@ -527,7 +527,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=11, minute=43, tzinfo=MELBOURNE_TZ)  #  Melbourne time
+    time(hour=12, minute=5, tzinfo=MELBOURNE_TZ)  #  Melbourne time
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -552,6 +552,8 @@ async def nag():
             await notify_misses(user_obj, goals, miss_count)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
-intents.message_content = True
+intents.members = True  #ensuring member intents are enabled
+intents.message_content = True 
+
 client = Client(intents=intents)
 client.run(TOKEN)
