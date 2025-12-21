@@ -312,18 +312,19 @@ class Client(discord.Client):
         #---- initialising vars ----
         content = message.content.lower()
         username = str(message.author.name)
-        
+                #---- Goal Completion previous day ----
+        if "!prev" in content:
+            if message.channel.name == "evidence":
+                target_date = update_prev_status(username, "complete")
+                await message.add_reaction("✅")
+
         #---- Goal Completion ----
-        if re.search(r"\b(cum|goals complete|goals completed)\b", content):
+        elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(username, "complete")
                 await message.add_reaction("✅")
 
-        #---- Goal Completion previous day ----
-        elif "!prev" in content:
-            if message.channel.name == "evidence":
-                target_date = update_prev_status(username, "complete")
-                await message.add_reaction("✅")
+
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
@@ -526,7 +527,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=20, minute=10, tzinfo=MELBOURNE_TZ)  # 14:12 Melbourne
+    time(hour=11, minute=24, tzinfo=MELBOURNE_TZ)  #  Melbourne time
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
