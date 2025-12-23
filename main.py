@@ -222,16 +222,12 @@ async def send_weekly_report(channel):
     if not performances:
         return
     
-    sorted_perf = sorted(
-    performances.items(),
-    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
-    reverse=True
-    )
+    sorted_perf = sorted(performances.items(), key= lambda x: x[1], reverse=True)
 
     msg_lines = [
-        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
-        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
-        for i, (user, (complete, total)) in enumerate(sorted_perf)
+        f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
+        f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
+        for i, (user, count) in enumerate(sorted_perf)
     ]  
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
