@@ -215,6 +215,27 @@ def run_daily_finalize():
         if yesterday in records and records[yesterday] == "":
             records[yesterday] = "incomplete"
     save_data()
+    
+async def send_weekly_report(channel):
+    
+    """Send the weekly all-time report"""
+    performances = performance_all(8)
+    if not performances:
+        return
+    
+    sorted_perf = sorted(
+    performances.items(),
+    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
+    reverse=True
+    )
+
+    msg_lines = [
+        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
+        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
+        for i, (user, (complete, total)) in enumerate(sorted_perf)
+    ]  
+    report = "\n".join(msg_lines)
+    await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
 async def send_weekly_report(channel):
     
