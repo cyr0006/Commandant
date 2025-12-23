@@ -215,9 +215,8 @@ def run_daily_finalize():
         if yesterday in records and records[yesterday] == "":
             records[yesterday] = "incomplete"
     save_data()
-    
+
 async def send_weekly_report(channel):
-    
     """Send the weekly all-time report"""
     performances = performance_all(8)
     if not performances:
@@ -237,26 +236,27 @@ async def send_weekly_report(channel):
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
-async def send_weekly_report(channel):
+#old function to be removed
+# async def send_weekly_report(channel):
     
-    """Send the weekly all-time report"""
-    performances = all_time_performance()
-    if not performances:
-        return
+#     """Send the weekly all-time report"""
+#     performances = all_time_performance()
+#     if not performances:
+#         return
     
-    sorted_perf = sorted(
-    performances.items(),
-    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
-    reverse=True
-    )
+#     sorted_perf = sorted(
+#     performances.items(),
+#     key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
+#     reverse=True
+#     )
 
-    msg_lines = [
-        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
-        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
-        for i, (user, (complete, total)) in enumerate(sorted_perf)
-    ]  
-    report = "\n".join(msg_lines)
-    await channel.send(f"📊 Weekly All-Time Report:\n{report}")
+#     msg_lines = [
+#         f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
+#         f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
+#         for i, (user, (complete, total)) in enumerate(sorted_perf)
+#     ]  
+#     report = "\n".join(msg_lines)
+#     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
 #========================= 2 missed goals =========================
 def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
@@ -298,7 +298,6 @@ class Client(discord.Client):
         Thread(target=run_flask, daemon=True).start()
         
         # Get the channels to work with
-        channel = discord.utils.get(self.get_all_channels(), name="general")
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
@@ -333,7 +332,8 @@ class Client(discord.Client):
         #---- initialising vars ----
         content = message.content.lower()
         username = str(message.author.name)
-                #---- Goal Completion previous day ----
+        
+        #---- Goal Completion previous day ----
         if "!prev" in content:
             if message.channel.name == "evidence":
                 target_date = update_prev_status(username, "complete")
@@ -355,10 +355,7 @@ class Client(discord.Client):
                 if(check_weekly_missed_goals(username)):
                     await notify_misses(username, message.channel)
         #---- Weekly Leaderboard ----
-        #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
-
-
             performances = performance_weekly()
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -548,7 +545,7 @@ async def check_scheduled_tasks():
 
 #========================= Nagger Task Loop ==========================
 @tasks.loop(time=[
-    time(hour=12, minute=5, tzinfo=MELBOURNE_TZ)  #  Melbourne time
+    time(hour=8, minute=0, tzinfo=MELBOURNE_TZ)  #  Melbourne time
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
