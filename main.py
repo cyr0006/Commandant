@@ -232,28 +232,6 @@ async def send_weekly_report(channel):
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
-#old function to be removed
-# async def send_weekly_report(channel):
-    
-#     """Send the weekly all-time report"""
-#     performances = all_time_performance()
-#     if not performances:
-#         return
-    
-#     sorted_perf = sorted(
-#     performances.items(),
-#     key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
-#     reverse=True
-#     )
-
-#     msg_lines = [
-#         f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
-#         f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
-#         for i, (user, (complete, total)) in enumerate(sorted_perf)
-#     ]  
-#     report = "\n".join(msg_lines)
-#     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
-
 #========================= 2 missed goals =========================
 def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     """Check if user has missed more than max_misses days this week (Mon-Sun)"""
@@ -407,13 +385,14 @@ class Client(discord.Client):
             help_message = (
                 "📋 **Bot Commands:**\n"
                 "• Type 'goals complete' or 'goals completed' or 'cum' in #evidence to mark today's goals as complete.\n"
-                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
                 "• Type 'goals incomplete' or 'goals failed' in #evidence to mark today's goals as incomplete.\n"
+                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
+                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
+                "• Type '!help' to see this help message.\n"
                 "• Type '!weekly' to see the weekly performance leaderboard.\n"
                 "• Type '!monthly' to see the monthly performance leaderboard.\n"
                 "• Type '!alltime' to see the all-time performance leaderboard.\n"
-                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
-                "• Type '!help' to see this help message."
+
             )
             await message.channel.send(help_message)
         #---- Custom Date Completions ----
