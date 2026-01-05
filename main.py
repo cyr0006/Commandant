@@ -27,7 +27,7 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
 GITHUB_REPO = os.getenv('GITHUB_REPO')
 GITHUB_FILE_PATH = os.getenv('GITHUB_FILE_PATH', 'get_status.json')
-METADATA_FILE_PATH = 'bot_metadata.json'
+METADATA_FILE_PATH = "bot_metadata.json"
 GITHUB_BRANCH = os.getenv('GITHUB_BRANCH', 'test')
 #========================= GitHub Storage Functions =========================
 def load_from_github(file_path=GITHUB_FILE_PATH):
@@ -138,7 +138,6 @@ def set_last_weekly_report(date_str):
     metadata['last_weekly_report'] = date_str
     save_to_github(metadata, metadata_sha, METADATA_FILE_PATH)
     metadata, metadata_sha = load_from_github(METADATA_FILE_PATH)
-
 #========================= Data Loading ==========================
 goal_status, current_sha = load_from_github()
 
@@ -221,22 +220,17 @@ def run_daily_finalize():
     save_data()
 
 async def send_weekly_report(channel):
-    
     """Send the weekly all-time report"""
-    performances = all_time_performance()
+    performances = performance_weekly_rep(7)
     if not performances:
         return
     
-    sorted_perf = sorted(
-    performances.items(),
-    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
-    reverse=True
-    )
+    sorted_perf = sorted(performances.items(), key= lambda x: x[1], reverse=True)
 
     msg_lines = [
-        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
-        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
-        for i, (user, (complete, total)) in enumerate(sorted_perf)
+        f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
+        f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
+        for i, (user, count) in enumerate(sorted_perf)
     ]  
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
@@ -281,7 +275,6 @@ class Client(discord.Client):
         Thread(target=run_flask, daemon=True).start()
         
         # Get the channels to work with
-        channel = discord.utils.get(self.get_all_channels(), name="general")
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
@@ -317,17 +310,19 @@ class Client(discord.Client):
         content = message.content.lower()
         username = str(message.author.name)
         
+        #---- Goal Completion previous day ----
+        if "!prev" in content:
+            if message.channel.name == "evidence":
+                target_date = update_prev_status(username, "complete")
+                await message.add_reaction("✅")
+
         #---- Goal Completion ----
-        if re.search(r"\b(cum|goals complete|goals completed)\b", content):
+        elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(username, "complete")
                 await message.add_reaction("✅")
 
-        #---- Goal Completion previous day ----
-        elif "!prev" in content:
-            if message.channel.name == "evidence":
-                target_date = update_prev_status(username, "complete")
-                await message.add_reaction("✅")
+
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
@@ -337,10 +332,7 @@ class Client(discord.Client):
                 if(check_weekly_missed_goals(username)):
                     await notify_misses(username, message.channel)
         #---- Weekly Leaderboard ----
-        #I also have a function which returns sorted the tally for each person for the last n days (for example user1 2/7 goals done, etc)
         elif content.startswith("!weekly"):
-
-
             performances = performance_weekly()
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -396,13 +388,14 @@ class Client(discord.Client):
             help_message = (
                 "📋 **Bot Commands:**\n"
                 "• Type 'goals complete' or 'goals completed' or 'cum' in #evidence to mark today's goals as complete.\n"
-                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
                 "• Type 'goals incomplete' or 'goals failed' in #evidence to mark today's goals as incomplete.\n"
+                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
+                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
+                "• Type '!help' to see this help message.\n"
                 "• Type '!weekly' to see the weekly performance leaderboard.\n"
                 "• Type '!monthly' to see the monthly performance leaderboard.\n"
                 "• Type '!alltime' to see the all-time performance leaderboard.\n"
-                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
-                "• Type '!help' to see this help message."
+
             )
             await message.channel.send(help_message)
         #---- Custom Date Completions ----
@@ -483,6 +476,16 @@ def performance_all(n: int = 7) -> dict:
         results[user_key] = complete_count
     return results
 
+def performance_weekly_rep(n: int = 7) -> dict:
+    results = {}
+    for user_key, records in goal_status.items():
+        sorted_dates = sorted(records.keys(), reverse=True)
+        last_n = sorted_dates[1:n+1] # Skip today
+        complete_count = sum(1 for d in last_n if records[d] == "complete")
+        results[user_key] = complete_count
+    return results
+
+
 def performance_weekly() -> dict:
     results = {}
     for user_key, records in goal_status.items():
@@ -500,7 +503,7 @@ def performance_weekly() -> dict:
             last_n = sorted_dates
         else:
             # Include the Monday itself
-            last_n = sorted_dates[:index+2]
+            last_n = sorted_dates[:index+1]
 
         complete_count = sum(1 for d in last_n if records[d] == "complete")
         results[user_key] = f"{complete_count}/{len(last_n)} goals complete"
@@ -529,9 +532,8 @@ async def check_scheduled_tasks():
         await check_and_run_scheduled_tasks(leaderboard)
 
 #========================= Nagger Task Loop ==========================
-
 @tasks.loop(time=[
-    time(hour=11, minute=49, tzinfo=MELBOURNE_TZ)  #  Melbourne time
+    time(hour=8, minute=0, tzinfo=MELBOURNE_TZ)  #  Melbourne time
 ])  # Check every day
 async def nag():
     global goal_status, current_sha
@@ -555,9 +557,8 @@ async def nag():
             print(f"[NAG] Notifying {username} of {miss_count} missed goals")
             await notify_misses(user_obj, goals, miss_count)
 #========================= Discord Client Run =========================
-
 intents = discord.Intents.default()
-intents.members = True  # Add this line
+intents.members = True  #ensuring member intents are enabled
 intents.message_content = True 
 
 client = Client(intents=intents)
