@@ -218,7 +218,7 @@ def run_daily_finalize():
 
 async def send_weekly_report(channel):
     """Send the weekly all-time report"""
-    performances = performance_all(8)
+    performances = performance_weekly_rep(7)
     if not performances:
         return
     
@@ -472,6 +472,16 @@ def performance_all(n: int = 7) -> dict:
         complete_count = sum(1 for d in last_n if records[d] == "complete")
         results[user_key] = complete_count
     return results
+
+def performance_weekly_rep(n: int = 7) -> dict:
+    results = {}
+    for user_key, records in goal_status.items():
+        sorted_dates = sorted(records.keys(), reverse=True)
+        last_n = sorted_dates[1:n+1] # Skip today
+        complete_count = sum(1 for d in last_n if records[d] == "complete")
+        results[user_key] = complete_count
+    return results
+
 
 def performance_weekly() -> dict:
     results = {}
