@@ -5,7 +5,7 @@
 import re
 import discord
 from discord.ext import tasks
-import time
+import time as t
 import os
 from dotenv import load_dotenv
 from datetime import date, datetime, time, timedelta, timezone
@@ -561,5 +561,5 @@ intents.members = True  #ensuring member intents are enabled
 intents.message_content = True 
 
 client = Client(intents=intents)
-time.sleep(25)  # Wait 5 seconds before attempting login
+t.sleep(25)  # Wait 5 seconds before attempting login
 client.run(TOKEN)
