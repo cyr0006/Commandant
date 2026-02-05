@@ -5,6 +5,7 @@
 import re
 import discord
 from discord.ext import tasks
+import time
 import os
 from dotenv import load_dotenv
 from datetime import date, datetime, time, timedelta, timezone
@@ -15,6 +16,7 @@ from flask import Flask
 from threading import Thread
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
+
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -559,4 +561,5 @@ intents.members = True  #ensuring member intents are enabled
 intents.message_content = True 
 
 client = Client(intents=intents)
+time.sleep(25)  # Wait 5 seconds before attempting login
 client.run(TOKEN)
