@@ -3,6 +3,7 @@
 
 #========================= Imports and Setup =========================
 import re
+import sys
 import discord
 from discord.ext import tasks
 import time as t
@@ -561,5 +562,17 @@ intents.members = True  #ensuring member intents are enabled
 intents.message_content = True 
 
 client = Client(intents=intents)
-t.sleep(25)  # Wait 5 seconds before attempting login
-client.run(TOKEN)
+
+if __name__ == "__main__":
+    try:
+        client.run(TOKEN)
+    except discord.errors.HTTPException as e:
+        if e.status == 429:
+            print("Rate limited by Discord. Please wait before restarting.")
+            print("This usually means the bot has been restarting too frequently.")
+            sys.exit(1)  # Exit cleanly to prevent Render from immediately restarting
+        else:
+            raise
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
