@@ -2,14 +2,12 @@
 # Author: Aryan Cyrus
 
 #========================= Imports and Setup =========================
-import re
-import sys
+import asyncio
 import discord
 from discord.ext import tasks
-import time as t
 import os
 from dotenv import load_dotenv
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import json
 import requests
 import base64
@@ -17,7 +15,6 @@ from flask import Flask
 from threading import Thread
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
-
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -169,6 +166,48 @@ def get_melbourne_date():
     """Get current date in Melbourne timezone"""
     return datetime.now(MELBOURNE_TZ).date()
 
+# async def process_missed_messages(channel):
+#     """Process messages that were sent while bot was offline"""
+#     last_time = get_last_processed_time()
+    
+#     if last_time:
+#         last_datetime = datetime.fromisoformat(last_time)
+#         print(f"Processing messages since {last_datetime}")
+        
+#         # Fetch messages after last_datetime
+#         messages = []
+#         async for message in channel.history(after=last_datetime, oldest_first=True):
+#             if message.author.bot:
+#                 continue
+#             messages.append(message)
+        
+#         print(f"Found {len(messages)} missed messages")
+        
+#         # Process each missed message
+#         for msg in messages:
+#             await process_message_content(msg)
+#     else:
+#         print("No previous timestamp found, skipping catch-up")
+    
+#     # Update last processed time to now
+#     set_last_processed_time(datetime.now(timezone.utc).isoformat())
+#     await check_and_run_scheduled_tasks(channel)    
+
+
+# async def process_message_content(message):
+#     """Process a message's content for goal updates"""
+#     content = message.content.lower()
+#     user_id = str(message.author.name)
+    
+#     if "goals complete" in content or "goals completed" in content:
+#         target_date = update_latest_status(user_id, "complete")
+#         print(f"[Catch-up] Marked goals complete for {user_id} on {target_date}")
+#         await message.add_reaction("✅")
+#     elif "goals incomplete" in content or "goals failed" in content:
+#         target_date = update_latest_status(user_id, "incomplete")
+#         await message.add_reaction("❌")
+#         print(f"[Catch-up] Marked goals incomplete for {user_id} on {target_date}")
+
 async def check_and_run_scheduled_tasks(channel):
     """Check if any scheduled tasks need to run"""
     today = get_melbourne_date()
@@ -220,25 +259,30 @@ def run_daily_finalize():
     save_data()
 
 async def send_weekly_report(channel):
+    
     """Send the weekly all-time report"""
-    performances = performance_weekly_rep(7)
+    performances = all_time_performance()
     if not performances:
         return
     
-    sorted_perf = sorted(performances.items(), key= lambda x: x[1], reverse=True)
+    sorted_perf = sorted(
+    performances.items(),
+    key=lambda x: (x[1][0] / x[1][1]) if x[1][1] > 0 else 0,
+    reverse=True
+    )
 
     msg_lines = [
-        f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
-        f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
-        for i, (user, count) in enumerate(sorted_perf)
+        f"{i+1}) {user}: {complete}/{total} complete ({(complete/total*100):.1f}%) "
+        f"{'🔥' if (complete/total*100) >= 85 else ('⚠️' if (complete/total*100) < 50 else '✅')}"
+        for i, (user, (complete, total)) in enumerate(sorted_perf)
     ]  
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly All-Time Report:\n{report}")
 
 #========================= 2 missed goals =========================
-def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
+def check_weekly_missed_goals(user_id: str, max_misses: int = 2) -> bool:
     """Check if user has missed more than max_misses days this week (Mon-Sun)"""
-    records = goal_status.get(username, {})
+    records = goal_status.get(user_id, {})
     if not records:
         return False
     
@@ -247,25 +291,24 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     # Calculate days since Monday (0=Monday, 6=Sunday)
     days_since_monday = today.weekday()
 
-    print("checking misses for", username)
+
+    # Count back to Monday (inclusive)
     miss_count = 0
-    for i in range(days_since_monday+1):  # +1 to include today
+    for i in range(days_since_monday + 1):  # +1 to include today
         date_str = str(today - timedelta(days=i))
+        
         if date_str in records:
             if records[date_str] == "incomplete":
                 miss_count += 1
-    if miss_count > max_misses:
-        print(f"{username} has missed {miss_count} days this week.")
-        return True, miss_count
-    return False, miss_count
+                if miss_count > max_misses:
+                    return True
+    return False
 
-async def notify_misses(user_obj, channel, missed: int = 2):
+async def notify_misses(user_id: str, channel, n: int = 2):
     """Notify user of n missed goals"""
-    if not user_obj:
-        print(f"[NOTIFY] Cannot notify - user_obj is None")
-        return
-    message = f"⚠️ {user_obj.mention}, you have missed your goals for {missed} days this week, king. Let's get back on track!"
-    await channel.send(message)
+    if check_weekly_missed_goals(user_id, n):
+        message = f"⚠️ {user_id}, you have missed your goals for {n} or more days this week, king. Let's get back on track!"
+        await channel.send(message)
 #========================= Discord Client =========================
 class Client(discord.Client):
     async def on_ready(self):
@@ -274,7 +317,8 @@ class Client(discord.Client):
         # Start Flask health check server
         Thread(target=run_flask, daemon=True).start()
         
-        # Get the channels to work with
+        # Get the channel to work with
+        channel = discord.utils.get(self.get_all_channels(), name="general")
         evidence = discord.utils.get(self.get_all_channels(), name="evidence")
         goals = discord.utils.get(self.get_all_channels(), name="goals")
         leaderboard = discord.utils.get(self.get_all_channels(), name="leaderboard")
@@ -293,61 +337,58 @@ class Client(discord.Client):
             await check_and_run_scheduled_tasks(leaderboard)
             if not check_scheduled_tasks.is_running():
                 check_scheduled_tasks.start()
-
-            #begin nagger loop    
-            if not nag.is_running():
-                nag.start()
+                
         else:
             print("Warning: No suitable channel found")
 
     async def on_message(self, message):
-        global goal_status, current_sha
-        goal_status, current_sha = load_from_github() 
         if message.author == self.user:
             return
         
         #---- initialising vars ----
         content = message.content.lower()
-        username = str(message.author.name)
+        user_id = str(message.author.name)
         
-        #---- Goal Completion previous day ----
-        if "!prev" in content:
-            if message.channel.name == "evidence":
-                target_date = update_prev_status(username, "complete")
-                await message.add_reaction("✅")
-
         #---- Goal Completion ----
-        elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
+        if "goals complete" in content or "goals completed" in content or "cum" in content:
             if message.channel.name == "evidence":
-                target_date = update_latest_status(username, "complete")
-                await message.add_reaction("✅")
+                target_date = update_latest_status(user_id, "complete")
+                await message.channel.send(
+                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                )
 
-
+        #---- Goal Completion previous day ----
+        elif "!prev" in content:
+            if message.channel.name == "evidence":
+                target_date = update_latest_status(user_id, "complete")
+                await message.channel.send(
+                    f"✅ Marked goals as complete for {message.author.name} on {target_date}."
+                )
         #---- Goal failure ----
         elif "goals incomplete" in content or "goals failed" in content:
             if message.channel.name == "evidence":
-                target_date = update_latest_status(username, "incomplete")
-                await message.add_reaction("❌")
+                target_date = update_latest_status(user_id, "incomplete")
+                await message.channel.send(
+                    f"❌ Marked goals as incomplete for {message.author.name} on {target_date}."
+                )
+                if(check_weekly_missed_goals(user_id)):
+                    await notify_misses(user_id, message.channel)
 
-                if(check_weekly_missed_goals(username)):
-                    await notify_misses(username, message.channel)
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
-            performances = performance_weekly()
+            performances = performance_all(7)
             if not performances:
                 await message.channel.send("No data available yet!")
                 return
             sorted_perf = sorted(performances.items(), key=lambda x: x[1], reverse=True)
             msg_lines = [
-                f"{i+1}) {user}: {count}"
+                f"{i+1}) {user}: {count}/7 complete"
                 for i, (user, count) in enumerate(sorted_perf)
             ]
             await message.channel.send("📊 Weekly performance:\n" + "\n".join(msg_lines))
 
         #---- Monthly Leaderboard ----
         elif content.startswith("!monthly"):
-
-
             performances = performance_all(30)
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -362,8 +403,6 @@ class Client(discord.Client):
             
         #---- All-Time Leaderboard ----
         elif content.startswith("!alltime"):
-
-
             performances = all_time_performance()
             if not performances:
                 await message.channel.send("No data available yet!")
@@ -383,52 +422,15 @@ class Client(discord.Client):
             report = "\n".join(msg_lines)
             await message.channel.send(f"📊 All-time performance:\n{report}")
         
-        #---- Help commands ----
-        elif content.startswith("!help"):
-            help_message = (
-                "📋 **Bot Commands:**\n"
-                "• Type 'goals complete' or 'goals completed' or 'cum' in #evidence to mark today's goals as complete.\n"
-                "• Type 'goals incomplete' or 'goals failed' in #evidence to mark today's goals as incomplete.\n"
-                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
-                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
-                "• Type '!help' to see this help message.\n"
-                "• Type '!weekly' to see the weekly performance leaderboard.\n"
-                "• Type '!monthly' to see the monthly performance leaderboard.\n"
-                "• Type '!alltime' to see the all-time performance leaderboard.\n"
-
-            )
-            await message.channel.send(help_message)
-        #---- Custom Date Completions ----
-        elif content.startswith("!mark"):
-            if message.channel.name == "evidence":
-                custom_date = content.split(" ")[1]
-                if mark_goal_custom_date(username, custom_date, "complete"):
-                    await message.add_reaction("✅")
-                else:
-                    await message.add_reaction("❌")
-           
-        
         #---- Force Check Tasks (admin command) ----
         elif content.startswith("!check-tasks"):
             await check_and_run_scheduled_tasks(message.channel)
             await message.channel.send("✅ Checked and ran any pending scheduled tasks!")
 
-#========================= Custom Date Goal Marking ==========================
-def mark_goal_custom_date(username: str, target_date: str, status: str) -> bool:
-    """Update the goal status for a user on a custom date"""
-    goal_status.setdefault(username, {})
-
-    if target_date not in goal_status[username]:
-        goal_status[username][target_date] = ""
-    
-    goal_status[username][target_date] = status 
-    save_data()
-
-    return True
 #========================= Update Latest pending status ==========================
-def update_latest_status(username: str, status: str) -> str:
+def update_latest_status(user_id: str, status: str) -> str:
     """Update the latest pending status for a user"""
-    goal_status.setdefault(username, {})
+    goal_status.setdefault(user_id, {})
     # Get Melbourne time
     tz = ZoneInfo("Australia/Melbourne")
     now = datetime.now(tz)
@@ -439,18 +441,18 @@ def update_latest_status(username: str, status: str) -> str:
     else: target_date = now.date()
     target_date_str = str(target_date)
 
-    if target_date_str not in goal_status[username]:
-        goal_status[username][target_date_str] = ""
+    if target_date_str not in goal_status[user_id]:
+        goal_status[user_id][target_date_str] = ""
 
     
-    goal_status[username][target_date_str] = status 
+    goal_status[user_id][target_date] = status
     save_data()
 
     return target_date
 
-def update_prev_status(username: str, status: str) -> str:
+def update_prev_status(user_id: str, status: str) -> str:
     """Update the latest pending status for a user"""
-    goal_status.setdefault(username, {})
+    goal_status.setdefault(user_id, {})
     # Get Melbourne time
     tz = ZoneInfo("Australia/Melbourne")
     now = datetime.now(tz)
@@ -458,10 +460,10 @@ def update_prev_status(username: str, status: str) -> str:
     target_date = (now - timedelta(days=1)).date()
     target_date_str = str(target_date)
 
-    if target_date_str not in goal_status[username]:
-        goal_status[username][target_date_str] = ""
+    if target_date_str not in goal_status[user_id]:
+        goal_status[user_id][target_date_str] = ""
     
-    goal_status[username][target_date_str] = status 
+    goal_status[user_id][target_date] = status
     save_data()
 
     return target_date
@@ -476,39 +478,6 @@ def performance_all(n: int = 7) -> dict:
         results[user_key] = complete_count
     return results
 
-def performance_weekly_rep(n: int = 7) -> dict:
-    results = {}
-    for user_key, records in goal_status.items():
-        sorted_dates = sorted(records.keys(), reverse=True)
-        last_n = sorted_dates[1:n+1] # Skip today
-        complete_count = sum(1 for d in last_n if records[d] == "complete")
-        results[user_key] = complete_count
-    return results
-
-
-def performance_weekly() -> dict:
-    results = {}
-    for user_key, records in goal_status.items():
-        sorted_dates = sorted(records.keys(), reverse=True)
-
-        index = None
-        for i, d in enumerate(sorted_dates):
-            date_obj = datetime.strptime(d, "%Y-%m-%d").date()
-            if date_obj.weekday() == 0:  # Monday
-                index = i
-                break
-
-        if index is None:
-            # No Monday found, just use all available dates
-            last_n = sorted_dates
-        else:
-            # Include the Monday itself
-            last_n = sorted_dates[:index+1]
-
-        complete_count = sum(1 for d in last_n if records[d] == "complete")
-        results[user_key] = f"{complete_count}/{len(last_n)} goals complete"
-
-    return results
 #========================= All-Time Performance Calculation ==========================
 def all_time_performance() -> dict:
     """
@@ -524,55 +493,11 @@ def all_time_performance() -> dict:
 #========================= Scheduled Task Loop ==========================
 @tasks.loop(hours=1)  # Check every hour
 async def check_scheduled_tasks():
-    global goal_status, current_sha
-    goal_status, current_sha = load_from_github() 
-    
-    leaderboard = discord.utils.get(client.get_all_channels(), name="leaderboard")
-    if leaderboard:
-        await check_and_run_scheduled_tasks(leaderboard)
-
-#========================= Nagger Task Loop ==========================
-@tasks.loop(time=[
-    time(hour=8, minute=0, tzinfo=MELBOURNE_TZ)  #  Melbourne time
-])  # Check every day
-async def nag():
-    global goal_status, current_sha
-    goal_status, current_sha = load_from_github()
-
-    goals = discord.utils.get(client.get_all_channels(), name="goals")
-    users = goal_status.keys()
-
-    for username in users:
-        user_obj = None
-        missed, miss_count = check_weekly_missed_goals(username, 2)
-        if(missed):
-            for m in goals.guild.members:
-                if m.name.lower() == username.lower():
-                    user_obj = m
-                    print(f"[NAG] Found user_obj for {username}, {m.name}")
-            if user_obj is None:
-                print(f"[NAG] Cannot notify - user_obj is None for {username}")
-                continue
-
-            print(f"[NAG] Notifying {username} of {miss_count} missed goals")
-            await notify_misses(user_obj, goals, miss_count)
+    channel = discord.utils.get(client.get_all_channels(), name="general")
+    if channel:
+        await check_and_run_scheduled_tasks(channel)
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
-intents.members = True  #ensuring member intents are enabled
-intents.message_content = True 
-
+intents.message_content = True
 client = Client(intents=intents)
-
-if __name__ == "__main__":
-    try:
-        client.run(TOKEN)
-    except discord.errors.HTTPException as e:
-        if e.status == 429:
-            print("Rate limited by Discord. Please wait before restarting.")
-            print("This usually means the bot has been restarting too frequently.")
-            sys.exit(1)  # Exit cleanly to prevent Render from immediately restarting
-        else:
-            raise
-    except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
+client.run(TOKEN)
