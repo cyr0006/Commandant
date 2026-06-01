@@ -15,7 +15,6 @@ import requests
 import base64
 from flask import Flask
 from threading import Thread
-from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
@@ -29,12 +28,12 @@ GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
 GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
 GITHUB_REPO = os.getenv('GITHUB_REPO')
 GITHUB_FILE_PATH = os.getenv('GITHUB_FILE_PATH', 'get_status.json')
-METADATA_FILE_PATH = 'bot_metadata.json'
-
+METADATA_FILE_PATH = "bot_metadata.json"
+GITHUB_BRANCH = os.getenv('GITHUB_BRANCH', 'test')
 #========================= GitHub Storage Functions =========================
 def load_from_github(file_path=GITHUB_FILE_PATH):
     """Load JSON data from GitHub"""
-    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}"
+    url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}?ref={GITHUB_BRANCH}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
@@ -59,6 +58,7 @@ def load_from_github(file_path=GITHUB_FILE_PATH):
 
 def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     """Save JSON data to GitHub"""
+
     url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPO}/contents/{file_path}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
@@ -72,6 +72,8 @@ def save_to_github(data, sha=None, file_path=GITHUB_FILE_PATH):
     payload = {
         "message": f"Update {file_path} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         "content": encoded_content,
+        "branch": GITHUB_BRANCH
+
     }
     
     # If we have a SHA (file exists), include it for update
@@ -137,7 +139,6 @@ def set_last_weekly_report(date_str):
     metadata['last_weekly_report'] = date_str
     save_to_github(metadata, metadata_sha, METADATA_FILE_PATH)
     metadata, metadata_sha = load_from_github(METADATA_FILE_PATH)
-
 #========================= Data Loading ==========================
 goal_status, current_sha = load_from_github()
 
@@ -226,8 +227,12 @@ async def send_weekly_report(channel):
         return
     
     sorted_perf = sorted(performances.items(), key= lambda x: x[1], reverse=True)
+    sorted_perf = sorted(performances.items(), key= lambda x: x[1], reverse=True)
 
     msg_lines = [
+        f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
+        f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
+        for i, (user, count) in enumerate(sorted_perf)
         f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
         f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
         for i, (user, count) in enumerate(sorted_perf)
@@ -248,6 +253,7 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
     days_since_monday = today.weekday()
 
     print("checking misses for", username)
+    print("checking misses for", username)
     miss_count = 0
     for i in range(days_since_monday+1):  # +1 to include today
         date_str = str(today - timedelta(days=i))
@@ -255,6 +261,7 @@ def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
             if records[date_str] == "incomplete":
                 miss_count += 1
     if miss_count > max_misses:
+        print(f"{username} has missed {miss_count} days this week.")
         print(f"{username} has missed {miss_count} days this week.")
         return True, miss_count
     return False, miss_count
@@ -316,11 +323,20 @@ class Client(discord.Client):
                 target_date = update_prev_status(username, "complete")
                 await message.add_reaction("✅")
 
+        
+        #---- Goal Completion previous day ----
+        if "!prev" in content:
+            if message.channel.name == "evidence":
+                target_date = update_prev_status(username, "complete")
+                await message.add_reaction("✅")
+
         #---- Goal Completion ----
+        elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
         elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(username, "complete")
                 await message.add_reaction("✅")
+
 
 
         #---- Goal failure ----
@@ -393,9 +409,13 @@ class Client(discord.Client):
                 "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
                 "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
                 "• Type '!help' to see this help message.\n"
+                "• Type '!prev' in #evidence to mark yesterday's goals as complete.\n"
+                "• Type '!mark YYYY-MM-DD' in #evidence to mark goals for a specific date as complete.\n"
+                "• Type '!help' to see this help message.\n"
                 "• Type '!weekly' to see the weekly performance leaderboard.\n"
                 "• Type '!monthly' to see the monthly performance leaderboard.\n"
                 "• Type '!alltime' to see the all-time performance leaderboard.\n"
+
 
             )
             await message.channel.send(help_message)
@@ -476,6 +496,16 @@ def performance_all(n: int = 7) -> dict:
         complete_count = sum(1 for d in last_n if records[d] == "complete")
         results[user_key] = complete_count
     return results
+
+def performance_weekly_rep(n: int = 7) -> dict:
+    results = {}
+    for user_key, records in goal_status.items():
+        sorted_dates = sorted(records.keys(), reverse=True)
+        last_n = sorted_dates[1:n+1] # Skip today
+        complete_count = sum(1 for d in last_n if records[d] == "complete")
+        results[user_key] = complete_count
+    return results
+
 
 def performance_weekly_rep(n: int = 7) -> dict:
     results = {}
@@ -580,6 +610,9 @@ async def get_user_obj(username: str):
 
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
+intents.members = True  #ensuring member intents are enabled
+intents.message_content = True 
+
 intents.members = True  #ensuring member intents are enabled
 intents.message_content = True 
 
