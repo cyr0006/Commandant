@@ -220,7 +220,7 @@ def run_daily_finalize():
     save_data()
 
 async def send_weekly_report(channel):
-    """Send the weekly all-time report"""
+    """Send the weekly repor about previous week"""
     performances = performance_weekly_rep(7)
     if not performances:
         return
@@ -233,7 +233,7 @@ async def send_weekly_report(channel):
         for i, (user, count) in enumerate(sorted_perf)
     ]  
     report = "\n".join(msg_lines)
-    await channel.send(f"📊 Weekly All-Time Report:\n{report}")
+    await channel.send(f"📊 Weekly Report:\n{report}")
 
 #========================= 2 missed goals =========================
 def check_weekly_missed_goals(username: str, max_misses: int = 2) -> bool:
@@ -294,9 +294,9 @@ class Client(discord.Client):
             if not check_scheduled_tasks.is_running():
                 check_scheduled_tasks.start()
 
-            #begin nagger loop    
-            if not nag.is_running():
-                nag.start()
+            # #begin nagger loop    
+            # if not nag.is_running():
+            #     nag.start()
         else:
             print("Warning: No suitable channel found")
 
@@ -330,7 +330,8 @@ class Client(discord.Client):
                 await message.add_reaction("❌")
 
                 if(check_weekly_missed_goals(username)):
-                    await notify_misses(username, message.channel)
+                    current_user_obj = get_user_obj(username)
+                    await notify_misses(current_user_obj, message.channel)
         #---- Weekly Leaderboard ----
         elif content.startswith("!weekly"):
             performances = performance_weekly()
@@ -532,30 +533,51 @@ async def check_scheduled_tasks():
         await check_and_run_scheduled_tasks(leaderboard)
 
 #========================= Nagger Task Loop ==========================
-@tasks.loop(time=[
-    time(hour=8, minute=0, tzinfo=MELBOURNE_TZ)  #  Melbourne time
-])  # Check every day
-async def nag():
+# @tasks.loop(time=[
+#     time(hour=8, minute=0, tzinfo=MELBOURNE_TZ)  #  Melbourne time
+# ])  # Check every day
+# async def nag():
+#     global goal_status, current_sha
+#     goal_status, current_sha = load_from_github()
+
+#     goals = discord.utils.get(client.get_all_channels(), name="goals")
+#     users = goal_status.keys()
+
+#     for username in users:
+#         user_obj = None
+#         missed, miss_count = check_weekly_missed_goals(username, 2)
+#         if(missed):
+#             for m in goals.guild.members:
+#                 if m.name.lower() == username.lower():
+#                     user_obj = m
+#                     print(f"[NAG] Found user_obj for {username}, {m.name}")
+#             if user_obj is None:
+#                 print(f"[NAG] Cannot notify - user_obj is None for {username}")
+#                 continue
+
+#             print(f"[NAG] Notifying {username} of {miss_count} missed goals")
+#             await notify_misses(user_obj, goals, miss_count)
+
+async def get_user_obj(username: str):
     global goal_status, current_sha
     goal_status, current_sha = load_from_github()
-
     goals = discord.utils.get(client.get_all_channels(), name="goals")
     users = goal_status.keys()
 
     for username in users:
         user_obj = None
-        missed, miss_count = check_weekly_missed_goals(username, 2)
-        if(missed):
-            for m in goals.guild.members:
-                if m.name.lower() == username.lower():
-                    user_obj = m
-                    print(f"[NAG] Found user_obj for {username}, {m.name}")
-            if user_obj is None:
-                print(f"[NAG] Cannot notify - user_obj is None for {username}")
-                continue
 
-            print(f"[NAG] Notifying {username} of {miss_count} missed goals")
-            await notify_misses(user_obj, goals, miss_count)
+        for m in goals.guild.members:
+            if m.name.lower() == username.lower():
+                user_obj = m
+                print(f"[user_obj query] Found user_obj for {username}, {m.name}")
+                return m
+        if user_obj is None:
+            print(f"[NAG] Cannot notify - user_obj is None for {username}")
+            continue
+    
+
+
 #========================= Discord Client Run =========================
 intents = discord.Intents.default()
 intents.members = True  #ensuring member intents are enabled
