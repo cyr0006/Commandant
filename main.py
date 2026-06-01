@@ -233,9 +233,6 @@ async def send_weekly_report(channel):
         f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
         f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
         for i, (user, count) in enumerate(sorted_perf)
-        f"{i+1}) {user}: {count}/7 complete ({(count/7*100):.1f}%) "
-        f"{'🔥' if count == 7 else ('⚠️' if count < 5 else '✅')}"
-        for i, (user, count) in enumerate(sorted_perf)
     ]  
     report = "\n".join(msg_lines)
     await channel.send(f"📊 Weekly Report:\n{report}")
@@ -331,7 +328,6 @@ class Client(discord.Client):
                 await message.add_reaction("✅")
 
         #---- Goal Completion ----
-        elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
         elif re.search(r"\b(cum|goals complete|goals completed)\b", content):
             if message.channel.name == "evidence":
                 target_date = update_latest_status(username, "complete")
