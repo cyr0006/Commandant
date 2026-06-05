@@ -10,10 +10,11 @@ cursor = conn.cursor()
 
 cursor.executescript("""
     CREATE TABLE IF NOT EXISTS goal_records (
+        user_id TEXT,
         username TEXT,
         date TEXT,
         status TEXT DEFAULT '',
-        PRIMARY KEY (username, date)
+        PRIMARY KEY (user_id, date)
     );
 
     CREATE TABLE IF NOT EXISTS metadata (
