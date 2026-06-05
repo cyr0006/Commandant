@@ -3,27 +3,24 @@ import sqlite3
 from database import set_goal_status
 
 ID_MAP = {
-    "alextheodore":           "000000000000000001",
-    "quarkybaryon":           "000000000000000002",
-    "arjunj":                 "000000000000000003",
-    "zenith0002":             "000000000000000004",
-    "gxoff":                  "000000000000000005",
-    "inconspicuous_divinity": "000000000000000006",
-    "lelouch888":             "000000000000000007",
-    "nnunes05":               "000000000000000008",
-    "ruthenium3335":          "000000000000000009",
-    "mirkwoodranger_":        "000000000000000010",
-    "_not_alex_":             "000000000000000011",
-    "sparesandwich":          "000000000000000012",
-    "noah_f5339":             "000000000000000013",
+    "alextheodore":           "689282795255627995",
+    "quarkybaryon":           "767603105343864853",
+    "arjunj":                 "480169292965478402",
+    "zenith0002":             "291434927092793345",
+    "gxoff":                  "515072212697612298",
+    "inconspicuous_divinity": "690049128683798546",
+    "lelouch888":             "818080225593524244",
+    "nnunes05":               "367953444943822849",
+    "ruthenium3335":          "866255019791482891",
+    "mirkwoodranger_":        "699239776687095919",
+    "_not_alex_":             "555317016639176705",
+    "sparesandwich":          "691788206764589098",
+    "noah_f5339":             "885476775063339028",
 }
 
 with open("../data/get_status.json") as f:
     data = json.load(f)
 
-
-with open("../get_status.json", "r") as f:
-    data = json.load(f)
 
 for username, records in data.items():
     user_id = ID_MAP.get(username)
