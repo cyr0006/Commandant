@@ -81,30 +81,32 @@ def set_metadata(key: str, value: str):
 
 
 # ── performance queries ──────────────────────────────────────────────────────
-def performance_last_n_days(n: int) -> dict:
-    """Returns {username: complete_count} for the last n days"""
-    with get_conn() as conn:
-        rows = conn.execute("""
-            SELECT username, 
-                   SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) as complete_count
-            FROM goal_records
-            WHERE date >= date('now', ?)
-            GROUP BY user_id, username
-        """, (f'-{n} days',)).fetchall()
-    return {r["username"]: r["complete_count"] for r in rows}
-
 def performance_this_week() -> dict:
-    """Returns {username: (complete_count, total_days)} from Monday to today"""
+    """Returns {username: (complete_count, total_days)} from Monday to today (calendar week)"""
     with get_conn() as conn:
         rows = conn.execute("""
             SELECT username, 
                    COUNT(*) as total,
                    SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) as complete_count
             FROM goal_records
-            WHERE date >= date('now', 'weekday 0', '-7 days')
+            WHERE date >= date('now', 'weekday 1', '-7 days')
+            AND date <= date('now')
             GROUP BY user_id, username
         """).fetchall()
     return {r["username"]: (r["complete_count"], r["total"]) for r in rows}
+
+def performance_last_n_days(n: int) -> dict:
+    """Returns {username: complete_count} for the last n days (rolling)"""
+    with get_conn() as conn:
+        rows = conn.execute("""
+            SELECT username, 
+                   SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) as complete_count
+            FROM goal_records
+            WHERE date > date('now', ?)
+            AND date <= date('now')
+            GROUP BY user_id, username
+        """, (f'-{n} days',)).fetchall()
+    return {r["username"]: r["complete_count"] for r in rows}
 
 def performance_all_time() -> dict:
     """Returns {username: (complete_count, total_days)}"""
