@@ -1,3 +1,4 @@
+from datetime import timedelta
 import sqlite3
 import os
 
@@ -82,19 +83,20 @@ def set_metadata(key: str, value: str):
 
 # ── performance queries ──────────────────────────────────────────────────────
 def performance_this_week() -> dict:
-    """Returns {username: (complete_count, total_days)} from Monday to today (calendar week)"""
+    from bot.utils import get_melbourne_date
+    today = get_melbourne_date()
+    monday = today - timedelta(days=today.weekday())  # weekday() is 0 on Monday
+    
     with get_conn() as conn:
         rows = conn.execute("""
-            SELECT username, 
+            SELECT username,
                    COUNT(*) as total,
                    SUM(CASE WHEN status = 'complete' THEN 1 ELSE 0 END) as complete_count
             FROM goal_records
-            WHERE date >= date('now', 'weekday 1', '-7 days')
-            AND date <= date('now')
+            WHERE date >= ? AND date <= ?
             GROUP BY user_id, username
-        """).fetchall()
+        """, (str(monday), str(today))).fetchall()
     return {r["username"]: (r["complete_count"], r["total"]) for r in rows}
-
 def performance_last_n_days(n: int) -> dict:
     """Returns {username: complete_count} for the last n days (rolling)"""
     with get_conn() as conn:
