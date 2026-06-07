@@ -64,4 +64,7 @@ commandant/
  
 ## Deployment
 Runs as a `systemd` service on a Raspberry Pi. The bot uses a local SQLite database at `db/commandant.db`.
+
+## Author
+Aryan Cyrus - Aryan.m10@yahoo.com 
  
