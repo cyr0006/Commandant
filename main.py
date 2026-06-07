@@ -4,6 +4,7 @@ import discord
 from dotenv import load_dotenv
 from bot.client import Client
 
+#main file loads the .env file and starts the bot client. It also handles rate limiting and other exceptions
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 

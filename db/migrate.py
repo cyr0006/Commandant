@@ -1,3 +1,5 @@
+#script used to migrate old JSON data to the new SQLite database. It reads from a JSON file containing user performance data and updates the database accordingly. The ID_MAP is used to map usernames to their corresponding user IDs in the database. The script iterates through each user's records and calls the set_goal_status function to update the database with the correct status for each date. Finally, it prints out a message for each migrated record and a completion message at the end.
+
 import json
 import sqlite3
 from database import set_goal_status

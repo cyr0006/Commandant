@@ -1,3 +1,5 @@
+# This script is for testing the database queries and printing out the results in a readable format. 
+# It will show the performance of users over the last 7 days, this week, and all time, as well as any weekly missed goals.
 from database import performance_last_n_days, performance_all_time, performance_this_week, check_weekly_missed_goals, get_all_users
 
 def print_section(title):
