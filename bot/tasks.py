@@ -1,3 +1,5 @@
+# schedules tasks and loops which repeat at certain intervals. 
+
 from datetime import timedelta
 import discord
 from discord.ext import tasks
@@ -10,7 +12,6 @@ from db.database import (
     set_metadata,
     performance_last_n_days,
 )
-
 def register_tasks(client):
     """Call this from on_ready to start the scheduled task loop"""
 

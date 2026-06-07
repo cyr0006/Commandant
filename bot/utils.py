@@ -1,3 +1,5 @@
+#utility functions for date and time management; always melbourne time
+
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
