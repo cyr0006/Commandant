@@ -19,6 +19,8 @@ from db.database import (
     performance_last_n_days,
 )
 
+load_dotenv()
+
 supabase = create_client(
     os.getenv("SUPABASE_URL"), 
     os.getenv("SUPABASE_KEY")
@@ -67,9 +69,9 @@ def register_tasks(client):
 
     check_scheduled_tasks.start()
 
-    @tasks.loop(hours=23)
+    @tasks.loop(time=datetime.time(hour=3, minute=0))  # 3am daily
     async def backup_database():
         filename = f"backup_{datetime.now().strftime('%Y%m%d')}.db"
         
-        with open("commandant.db", "rb") as f:
+        with open("db/commandant.db", "rb") as f:
             supabase.storage.from_("backups").upload(filename, f)
