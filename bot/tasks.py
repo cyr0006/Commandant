@@ -1,7 +1,7 @@
 # schedules tasks and loops which repeat at certain intervals. 
 import os
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dtime
 #import supabase for backups
 from supabase import create_client
 import subprocess
@@ -69,7 +69,7 @@ def register_tasks(client):
 
     check_scheduled_tasks.start()
 
-    @tasks.loop(time=datetime.time(hour=3, minute=0))  # 3am daily
+    @tasks.loop(time=dtime(hour=3, minute=0))
     async def backup_database():
         filename = f"backup_{datetime.now().strftime('%Y%m%d')}.db"
         
