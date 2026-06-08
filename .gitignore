@@ -1,2 +1,9 @@
 # .gitignore
 .env
+
+#db
+db/commandant.db
+
+# sqlite tools
+sqlite3.exe
+/sqlite-tools-win
