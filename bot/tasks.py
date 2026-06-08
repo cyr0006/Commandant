@@ -1,6 +1,12 @@
 # schedules tasks and loops which repeat at certain intervals. 
+import os
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+#import supabase for backups
+from supabase import create_client
+import subprocess
 
-from datetime import timedelta
+
 import discord
 from discord.ext import tasks
 from bot.utils import get_melbourne_date
@@ -12,6 +18,12 @@ from db.database import (
     set_metadata,
     performance_last_n_days,
 )
+
+supabase = create_client(
+    os.getenv("SUPABASE_URL"), 
+    os.getenv("SUPABASE_KEY")
+    )
+
 def register_tasks(client):
     """Call this from on_ready to start the scheduled task loop"""
 
@@ -54,3 +66,10 @@ def register_tasks(client):
         await channel.send("📊 Weekly Report:\n" + "\n".join(lines))
 
     check_scheduled_tasks.start()
+
+    @tasks.loop(hours=23)
+    async def backup_database():
+        filename = f"backup_{datetime.now().strftime('%Y%m%d')}.db"
+        
+        with open("commandant.db", "rb") as f:
+            supabase.storage.from_("backups").upload(filename, f)
