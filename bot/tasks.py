@@ -1,5 +1,6 @@
 # schedules tasks and loops which repeat at certain intervals. 
 import os
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, time as dtime
 #import supabase for backups
@@ -69,9 +70,12 @@ def register_tasks(client):
 
     check_scheduled_tasks.start()
 
-    @tasks.loop(time=dtime(hour=3, minute=0))
+    @tasks.loop(time=dtime(hour=11, minute=28, tzinfo=ZoneInfo('Australia/Melbourne')))
     async def backup_database():
         filename = f"backup_{datetime.now().strftime('%Y%m%d')}.db"
         
         with open("db/commandant.db", "rb") as f:
             supabase.storage.from_("backups").upload(filename, f)
+        
+        print(f"Database backed up to Supabase as {filename}")
+    backup_database.start()
