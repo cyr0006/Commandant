@@ -130,7 +130,7 @@ def check_weekly_missed_goals(user_id: str, max_misses: int = 2):
             FROM goal_records
             WHERE user_id = ?
             AND (status = 'incomplete' OR status = '')
-            AND date >= date('now', 'weekday 0', '-7 days')
+            AND date >= date('now', 'weekday 0', '-6 days')
         """, (user_id,)).fetchone()
     miss_count = row["miss_count"]
     return miss_count > max_misses, miss_count
