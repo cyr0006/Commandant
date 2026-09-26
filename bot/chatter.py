@@ -3,8 +3,8 @@ import time
 from collections import defaultdict, deque
 
 HISTORY_SIZE = 8
-CHIME_CHANCE = 0.5
-COOLDOWN_SECONDS = 1 #20 * 60
+CHIME_CHANCE = 0.1
+COOLDOWN_SECONDS = 10 * 60
 CONVERSATION_TURNS = 4
 
 _history = defaultdict(lambda: deque(maxlen=HISTORY_SIZE))
