@@ -85,6 +85,7 @@ class Client(discord.Client):
             reply = await get_conversation_response(get_history_text(message.channel.id))
             if reply:
                 sent = await message.channel.send(reply[:2000])
+                record_message(message.channel.id, self.user.name, reply)
                 advance_conversation(message.channel.id, sent.id)
 
         elif should_chime_in(message.channel.id):
@@ -92,4 +93,5 @@ class Client(discord.Client):
             if reply:
                 mark_chimed(message.channel.id)
                 sent = await message.channel.send(reply[:2000])
+                record_message(message.channel.id, self.user.name, reply)
                 start_conversation(message.channel.id, sent.id)
