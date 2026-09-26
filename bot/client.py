@@ -9,6 +9,7 @@ from bot.commands import (
     cmd_monthly,
     cmd_alltime,
     cmd_help,
+    cmd_ai,
 )
 from bot.tasks import register_tasks
 from db.database import check_weekly_missed_goals
@@ -53,6 +54,10 @@ class Client(discord.Client):
 
         elif content.startswith("!help"):
             await cmd_help(message)
+
+        elif content.startswith("!ai"):
+            prompt = message.content[len("!ai"):].strip()
+            await cmd_ai(message, prompt)
 
         elif content.startswith("!mark") and in_evidence:
             await cmd_mark(message, user_id, username, content)
