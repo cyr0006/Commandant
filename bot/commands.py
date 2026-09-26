@@ -8,6 +8,7 @@ from db.database import (
     check_weekly_missed_goals,
 )
 from bot.utils import get_melbourne_now
+from persona.groq_client import get_ai_response
 
 async def cmd_complete(message, user_id, username):
     now = get_melbourne_now()
@@ -101,6 +102,18 @@ async def cmd_help(message):
         "• `!weekly` — calendar week leaderboard\n"
         "• `!monthly` — rolling 30 day leaderboard\n"
         "• `!alltime` — all-time leaderboard\n"
+        "• `!ai <message>` — chat with the AI\n"
         "• `!help` — show this message\n"
     )
     await message.channel.send(help_message)
+
+async def cmd_ai(message, prompt):
+    if not prompt:
+        await message.channel.send("Usage: `!ai <your message>`")
+        return
+    try:
+        reply = await get_ai_response(prompt)
+        await message.channel.send(reply[:2000])
+    except Exception as e:
+        print(f"Groq API error: {e}")
+        await message.channel.send("⚠️ Couldn't reach the AI right now, try again in a bit.")
