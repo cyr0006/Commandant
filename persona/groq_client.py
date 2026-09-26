@@ -40,3 +40,46 @@ async def get_ai_response(prompt: str) -> str:
         model="openai/gpt-oss-120b",
     )
     return chat_completion.choices[0].message.content
+
+
+CHIME_IN_INSTRUCTIONS = (
+    "You're passively watching this group chat and occasionally jump in unprompted, like a "
+    "mate who's been half-reading the conversation. You were just shown the last few messages. "
+    "Only jump in if something's genuinely worth a comment (a good roast opportunity, someone "
+    "slacking on goals, a wild take, something funny) - most of the time there's nothing worth "
+    "saying. If there's nothing worth commenting on, reply with exactly: SKIP\n"
+    "If you do jump in, keep it to one short line, reacting to something specific in the chat - "
+    "don't summarize the conversation or announce that you're commenting."
+)
+
+
+async def get_chime_in_response(history: str) -> str | None:
+    chat_completion = await _client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT + "\n\n" + CHIME_IN_INSTRUCTIONS},
+            {"role": "user", "content": f"Recent chat:\n{history}"},
+        ],
+        model="openai/gpt-oss-120b",
+    )
+    text = chat_completion.choices[0].message.content.strip()
+    if not text or text.upper() == "SKIP":
+        return None
+    return text
+
+
+CONVERSATION_INSTRUCTIONS = (
+    "Someone in the group chat is now replying directly to you, continuing the conversation "
+    "you jumped into. Keep responding in character - short, banter-y, one line - like you're "
+    "actually in the back-and-forth, not restarting the bit each time."
+)
+
+
+async def get_conversation_response(history: str) -> str:
+    chat_completion = await _client.chat.completions.create(
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT + "\n\n" + CONVERSATION_INSTRUCTIONS},
+            {"role": "user", "content": f"Recent chat:\n{history}"},
+        ],
+        model="openai/gpt-oss-120b",
+    )
+    return chat_completion.choices[0].message.content
